@@ -465,8 +465,6 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
 
   Ipv4Address dst = header.GetDestination ();
   Ipv4Address origin = header.GetSource ();
-  auto node = idev->GetNode();
-  NS_LOG_DEBUG("node name: " << Names::FindName(node)); //test whether correct node
 
   // Deferred route request
   if (idev == m_lo)
@@ -587,8 +585,23 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
     }
 
   // Forwarding
-  NS_LOG_DEBUG("Ipv4Header " << header.GetSource() << " >> " << header.GetDestination());
-  return Forwarding (p, header, ucb, ecb);
+    NS_LOG_DEBUG("Ipv4Header " << header.GetSource() << " >> "
+                               << header.GetDestination());
+    auto node = idev->GetNode();
+    NS_LOG_DEBUG(
+        "node name: " << Names::FindName(node));  // test whether correct node
+    if (node->GetTag() != Node::NodeTag::TAG_NORMAL) {
+      // 节点状态有效时间判断 移至 node.cc GetTag()
+      // if (Now() - node->GetTagSetTime() > node->GetTagValidTime()) {
+      // NS_LOG_DEBUG("node become normal because of exceed valid time.");
+      // node->SetTag(Node::NodeTag::TAG_NORMAL);
+      // } else 
+      if (node->IsSuspect(header.GetSource(), header.GetDestination())) {
+        NS_LOG_INFO("Drop the packet because of the pair(src,dst) is suspicious.");
+        return false;
+      }
+    }
+    return Forwarding(p, header, ucb, ecb);
 }
 
 bool

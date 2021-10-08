@@ -24,6 +24,7 @@
 #include <cmath>
 #include "ns3/aodv-module.h"
 #include "ns3/core-module.h"
+#include "ns3/applications-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/mobility-module.h"
@@ -103,8 +104,10 @@ private:
 
 int main (int argc, char **argv)
 {
-  LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_ALL);
-  LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
+  // LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_ALL);
+  // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
+  LogComponentEnable("UdpEchoClientApplication", LOG_LEVEL_ALL);
+  LogComponentEnable("UdpEchoServerApplication", LOG_LEVEL_ALL);
   AodvExample test;
   if (!test.Configure (argc, argv))
     NS_FATAL_ERROR ("Configuration failed. Aborted.");
@@ -229,16 +232,24 @@ AodvExample::InstallInternetStack ()
 void
 AodvExample::InstallApplications ()
 {
-  V4PingHelper ping (interfaces.GetAddress (size - 1));
-  ping.SetAttribute ("Verbose", BooleanValue (true));
+  UdpEchoServerHelper echoServer (9);
 
-  ApplicationContainer p = ping.Install (nodes.Get (0));
-  p.Start (Seconds (0));
-  p.Stop (Seconds (totalTime) - Seconds (0.001));
+  ApplicationContainer serverApps = echoServer.Install (nodes.Get (size - 1));
+  serverApps.Start (Seconds (1.0));
+  serverApps.Stop (Seconds (totalTime));
 
-  // move node away
-  Ptr<Node> node = nodes.Get (size/2);
-  Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
-  Simulator::Schedule (Seconds (totalTime/3), &MobilityModel::SetPosition, mob, Vector (1e5, 1e5, 1e5));
+  UdpEchoClientHelper echoClient (interfaces.GetAddress (size - 1), 9);
+  echoClient.SetAttribute ("MaxPackets", UintegerValue (7));
+  echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
+  echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
+
+  ApplicationContainer clientApps = 
+  echoClient.Install (nodes.Get (0));
+  clientApps.Start (Seconds (2.0));
+  clientApps.Stop (Seconds (totalTime));
+  nodes.Get(4)->SetTag(Node::NodeTag::TAG_DEFEND);
+  nodes.Get(4)->SetTagValidTime(Seconds(4));
+  nodes.Get(4)->AddSuspect(interfaces.GetAddress(0), interfaces.GetAddress(size-1));
+  nodes.Get(4)->SetSuspiciousValidTime(Seconds(3.5));
 }
 

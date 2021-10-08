@@ -23,11 +23,13 @@
 
 #include <vector>
 #include <set>
+#include <map>
 
 #include "ns3/object.h"
 #include "ns3/callback.h"
 #include "ns3/ptr.h"
 #include "ns3/net-device.h"
+#include "ns3/nstime.h"
 
 namespace ns3 {
 
@@ -67,7 +69,8 @@ public:
   /**
    * \param systemId a unique integer used for parallel simulations.
    */
-  Node(uint32_t systemId);
+  Node(uint32_t systemId, uint32_t tag = 0, Time tag_validtime = Seconds(0.25),
+       Time sus_validtime = Seconds(0.2));
 
   virtual ~Node();
 
@@ -80,11 +83,43 @@ public:
   uint32_t GetId (void) const;
 
   // Get type of this node
-  uint32_t GetTag(void) const;
+  enum NodeTag {
+    TAG_NORMAL,
+    TAG_PROBE,
+    TAG_DEFEND
+  };
+  uint32_t GetTag(void);
   void SetTag(uint32_t tag);
+  Time GetTagSetTime(void) const;
+  Time GetTagValidTime(void) const;
+  void SetTagValidTime(Time validtime = Seconds(0.25));
 
-  bool IsSuspect(Ipv4Address ipadr) const;
-  void AddSuspect(Ipv4Address ipadr);
+  /**
+   * Packet whether suspicious
+   * \param src2dst a std pair<Ipv4,Ipv4> of src and dst
+   */
+  bool IsSuspect(std::pair<Ipv4Address, Ipv4Address> src2dst);
+  /**
+   * Packet whether suspicious
+   * \param src source Ipv4Address
+   * \param dst destination Ipv4Address
+   */
+  bool IsSuspect(Ipv4Address src, Ipv4Address dst);
+  /**
+   * Add a suspicious pair 
+   * \param src2dst a std pair<Ipv4,Ipv4> of src and dst
+   * \param nowtime event time, the value is Time::Now() while nowtime = 0 or default value
+   */
+  void AddSuspect(std::pair<Ipv4Address, Ipv4Address> src2dst, Time nowtime = Seconds(0));
+  /**
+   * Add a suspicious pair 
+   * \param src source Ipv4Address
+   * \param dst destination Ipv4Address
+   * \param nowtime event time, the value is Time::Now() while nowtime = 0 or default value
+   */
+  void AddSuspect(Ipv4Address src, Ipv4Address dst, Time nowtime = Seconds(0));
+  void SetSuspiciousValidTime(Time validtime);
+  Time GetSuspiciousValidTime(void) const;
 
   /**
    * In the future, ns3 nodes may have clock that returned a local time
@@ -293,7 +328,10 @@ private:
   uint32_t    m_id;         //!< Node id for this node
   uint32_t    m_sid;        //!< System id for this node
   uint32_t    m_tag;        //!< Node tag for type of this node
-  std::set<Ipv4Address> m_suspect;
+  Time m_tag_settime;
+  Time m_tag_validtime;
+  Time m_suspicious_validtime;
+  std::map<std::pair<Ipv4Address, Ipv4Address>, Time> m_suspects;
   std::vector<Ptr<NetDevice> > m_devices; //!< Devices associated to this node
   std::vector<Ptr<Application> > m_applications; //!< Applications associated to this node
   ProtocolHandlerList m_handlers; //!< Protocol handlers in the node

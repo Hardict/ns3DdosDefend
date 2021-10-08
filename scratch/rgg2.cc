@@ -125,14 +125,14 @@ int main(int argc, char *argv[]) {
   NS_LOG_INFO("Create Applications.");
   uint32_t port = 2333;
   TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
-  for(uint32_t i=0;i<AdHocNode.GetN();i++){
+  for (uint32_t i = 0; i < AdHocNode.GetN(); i++) {
     Ptr<Socket> recvSocket = Socket::CreateSocket(AdHocNode.Get(i), tid);
     recvSocket->Bind(InetSocketAddress(Ipv4Address::GetAny(), port));
     recvSocket->SetRecvCallback(MakeCallback(&recvCallback));
   }
 
   Ptr<Socket> source = Socket::CreateSocket(AdHocNode.Get(14), tid);
-  source->Connect(InetSocketAddress(Ipv4Address(AdHocIp.GetAddress(0)),port));
+  source->Connect(InetSocketAddress(Ipv4Address(AdHocIp.GetAddress(0)), port));
 
   Simulator::Schedule(
       Seconds(2.), &sendWithTag1, source, AdHocIp.GetAddress(14),
@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
       Seconds(5.), &sendWithTag2, source, AdHocIp.GetAddress(14),
       InetSocketAddress(Ipv4Address(AdHocIp.GetAddress(0)), port));
 
-  phy.EnablePcap ("rgg2", AdHocDevices);
+  phy.EnablePcap("rgg2", AdHocDevices);
   Ptr<OutputStreamWrapper> routingStream =
       Create<OutputStreamWrapper>("rgg2.routes", std::ios::out);
   aodv.PrintRoutingTableAllEvery(Seconds(0.5), routingStream);
@@ -164,7 +164,8 @@ TypeId MyTag::GetTypeId(void) {
           .AddAttribute("FlagValue", "packet flag value", EmptyAttributeValue(),
                         MakeUintegerAccessor(&MyTag::GetFlag),
                         MakeUintegerChecker<uint32_t>())
-          .AddAttribute("FlagTtlValue", "packet Flag Ttl", EmptyAttributeValue(),
+          .AddAttribute("FlagTtlValue", "packet Flag Ttl",
+                        EmptyAttributeValue(),
                         MakeUintegerAccessor(&MyTag::GetFlagTtl),
                         MakeUintegerChecker<uint32_t>());
   return tid;
@@ -179,9 +180,7 @@ void MyTag::Deserialize(TagBuffer i) {
   m_flag = i.ReadU32();
   m_ttl = i.ReadU32();
 }
-void MyTag::Print(std::ostream &os) const {
-  os << "v=" << (uint32_t)m_flag;
-}
+void MyTag::Print(std::ostream &os) const { os << "v=" << (uint32_t)m_flag; }
 void MyTag::SetFlag(uint32_t value) { m_flag = value; }
 uint32_t MyTag::GetFlag(void) const { return m_flag; }
 void MyTag::SetFlagTtl(uint32_t ttl) { m_ttl = ttl; }
@@ -213,55 +212,57 @@ static void recvCallback(Ptr<Socket> sock) {
   Ptr<Node> node = sock->GetNode();
   Ptr<Ipv4L3Protocol> ipl3p = node->GetObject<Ipv4L3Protocol>();
   Ptr<Ipv4RoutingProtocol> iprtp = ipl3p->GetRoutingProtocol();
-  Ptr<aodv::RoutingProtocol> aodv_rtp = AodvHelper::GetRouting<aodv::RoutingProtocol>(iprtp);
+  Ptr<aodv::RoutingProtocol> aodv_rtp =
+      AodvHelper::GetRouting<aodv::RoutingProtocol>(iprtp);
   aodv::RoutingTable aodv_rtt = aodv_rtp->GetRoutingTable();
   aodv_rtt.Print(Create<OutputStreamWrapper>("test.routes", std::ios::out));
   // aodv::RoutingTableEntry rtte;
   // aodv_rtt.LookupRoute(Ipv4Address("195.1.1.11"),rtte);
   // rtte.Print(Create<OutputStreamWrapper>("test.routes", std::ios::out));
-  if(org_tag.GetFlag()==kProbeTag){
-    //probe tag packet
-    if(node->GetTag()!=kDefendTag){
+  if (org_tag.GetFlag() == kProbeTag) {
+    // probe tag packet
+    if (node->GetTag() != kDefendTag) {
       node->SetTag(kProbeTag);
       auto mp = aodv_rtt.GetMap();
-      for(auto item: mp){
+      for (auto item : mp) {
         // item.first.Print(std::cout);
         Ipv4Address dst = item.first;
         aodv::RoutingTableEntry rtte = item.second;
-        if(dst.IsLocalhost()||dst.IsBroadcast()||dst.IsSubnetDirectedBroadcast(Ipv4Mask("255.255.255.0")))
-        continue;
-        
+        if (dst.IsLocalhost() || dst.IsBroadcast() ||
+            dst.IsSubnetDirectedBroadcast(Ipv4Mask("255.255.255.0")))
+          continue;
+
         // send probe packet to neighbor
-        if(1.0*rand()/RAND_MAX < kProb && org_tag.GetFlagTtl()>1){
+        if (1.0 * rand() / RAND_MAX < kProb && org_tag.GetFlagTtl() > 1) {
           Ptr<Packet> pp = Create<Packet>();
           // SocketIpTtlTag ipttltag;
           // ipttltag.SetTtl(1);
           // pp->AddPacketTag(ipttltag);
           MyTag mytag;
           mytag.SetFlag(org_tag.GetFlag());
-          mytag.SetFlagTtl(org_tag.GetFlagTtl()-1);
+          mytag.SetFlagTtl(org_tag.GetFlagTtl() - 1);
           pp->AddPacketTag(mytag);
           Ipv4Header header;
           header.SetTtl(1);
           header.SetDestination(dst);
           header.SetSource(rtte.GetInterface().GetLocal());
           // sock->SendTo(pp,0,dst);
-          std::cout<<"send probe packet"<<std::endl;
-          std::cout<<Now().GetSeconds()<<std::endl;
-          Simulator::ScheduleNow(sendSpecailPacket,sock,pp,dst);
+          std::cout << "send probe packet" << std::endl;
+          std::cout << Now().GetSeconds() << std::endl;
+          Simulator::ScheduleNow(sendSpecailPacket, sock, pp, dst);
           // header.Print(std::cout);
         }
       }
     }
-  }else if(org_tag.GetFlag()==kDefendTag){
-    //defend tag packet
+  } else if (org_tag.GetFlag() == kDefendTag) {
+    // defend tag packet
     node->SetTag(kDefendTag);
-  }else{
-    //normal packet
+  } else {
+    // normal packet
   }
 }
 
-void sendWithTag1(Ptr<Socket> sock, Ipv4Address src, InetSocketAddress dst){
+void sendWithTag1(Ptr<Socket> sock, Ipv4Address src, InetSocketAddress dst) {
   Ptr<Packet> p = Create<Packet>();
   // create a tag.
   MyTag tag;
@@ -273,7 +274,7 @@ void sendWithTag1(Ptr<Socket> sock, Ipv4Address src, InetSocketAddress dst){
   header.SetSource(src);
   header.SetDestination(dst.GetIpv4());
   p->AddHeader(header);
-  
+
   sock->SendTo(p, 0, dst);
 }
 
@@ -288,7 +289,7 @@ void sendWithTag2(Ptr<Socket> sock, Ipv4Address src, InetSocketAddress dst) {
   sock->SendTo(p, 0, dst);
 }
 
-void sendSpecailPacket(Ptr<Socket> sock, Ptr<Packet> packet, Ipv4Address dst){
-  std::cout<<"???"<<std::endl;
-  sock->SendTo(packet,0,dst);
+void sendSpecailPacket(Ptr<Socket> sock, Ptr<Packet> packet, Ipv4Address dst) {
+  std::cout << "???" << std::endl;
+  sock->SendTo(packet, 0, dst);
 }

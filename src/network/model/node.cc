@@ -73,21 +73,42 @@ Node::GetTypeId (void)
                    UintegerValue (0),
                    MakeUintegerAccessor (&Node::m_sid),
                    MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("NodeTag", "The behaviour of this: normal, probe or defend.",
+                   TypeId::ATTR_GET | TypeId::ATTR_SET,
+                   UintegerValue(0),
+                   MakeUintegerAccessor (&Node::m_tag),
+                   MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("TagValidTime", "The valid time of this node, update in user code.",
+                   TypeId::ATTR_GET | TypeId::ATTR_SET,
+                   TimeValue(Seconds(0.25)),
+                   MakeTimeAccessor (&Node::m_tag_validtime),
+                   MakeTimeChecker ())
+    .AddAttribute ("SuspiciousValidTime", "The valid time of the suspicious set.",
+                   TypeId::ATTR_GET | TypeId::ATTR_SET,
+                   TimeValue(Seconds(0.2)),
+                   MakeTimeAccessor (&Node::m_suspicious_validtime),
+                   MakeTimeChecker ())
   ;
   return tid;
 }
 
 Node::Node()
   : m_id (0),
-    m_sid (0)
+    m_sid (0),
+    m_tag (0),
+    m_tag_validtime (Seconds(0.25)),
+    m_suspicious_validtime (Seconds(0.2))
 {
   NS_LOG_FUNCTION (this);
   Construct ();
 }
 
-Node::Node(uint32_t sid)
+Node::Node(uint32_t sid, uint32_t tag,Time tagtime, Time sustime)
   : m_id (0),
-    m_sid (sid)
+    m_sid (sid),
+    m_tag (tag),
+    m_tag_validtime (tagtime),
+    m_suspicious_validtime (sustime)
 { 
   NS_LOG_FUNCTION (this << sid);
   Construct ();
@@ -112,24 +133,74 @@ Node::GetId (void) const
   return m_id;
 }
 
-uint32_t Node::GetTag (void) const {
-  NS_LOG_FUNCTION (this);
+void Node::SetTag(uint32_t tag) {
+  NS_LOG_FUNCTION(this);
+  m_tag = tag;
+  m_tag_settime = Now();
+}
+
+uint32_t Node::GetTag(void){
+  NS_LOG_FUNCTION(this);
+  if (m_tag != NodeTag::TAG_NORMAL && 
+      Now() - GetTagSetTime() > GetTagValidTime()) {
+    NS_LOG_DEBUG("node become normal because of exceed valid time.");
+    SetTag(NodeTag::TAG_NORMAL);
+  }
   return m_tag;
 }
 
-void Node::SetTag (uint32_t tag) {
-  NS_LOG_FUNCTION (this);
-  m_tag = tag;
+Time Node::GetTagSetTime(void) const {
+  NS_LOG_FUNCTION(this);
+  return m_tag_settime;
 }
 
-bool Node::IsSuspect (Ipv4Address ipadr) const {
+Time Node::GetTagValidTime(void) const {
   NS_LOG_FUNCTION(this);
-  return (m_suspect.find(ipadr) != m_suspect.end());
+  return m_tag_validtime;
 }
 
-void Node::AddSuspect (Ipv4Address ipadr) {
+void Node::SetTagValidTime(Time validtime) {
   NS_LOG_FUNCTION(this);
-  m_suspect.insert(ipadr);
+  m_tag_validtime = validtime;
+}
+
+bool Node::IsSuspect(Ipv4Address src, Ipv4Address dst) {
+  NS_LOG_FUNCTION(this);
+  return IsSuspect(std::make_pair(src, dst));
+}
+
+bool Node::IsSuspect(std::pair<Ipv4Address, Ipv4Address> src2dst) {
+  NS_LOG_FUNCTION(this);
+  if (m_suspects.find(src2dst) == m_suspects.end()) return false;
+  Time tim = m_suspects[src2dst];
+  if (Now() - tim > m_suspicious_validtime) {
+    // 超过时间，不再可疑
+    m_suspects.erase(src2dst);
+    return false;
+  }
+  return true;
+}
+
+void Node::AddSuspect(Ipv4Address src, Ipv4Address dst, Time nowtime) {
+  NS_LOG_FUNCTION(this);
+  if (nowtime == Seconds(0)) nowtime = Now();
+  m_suspects[std::make_pair(src, dst)] = nowtime;
+}
+
+void Node::AddSuspect(std::pair<Ipv4Address, Ipv4Address> src2dst, Time nowtime) {
+  NS_LOG_FUNCTION(this);
+  if (nowtime == Seconds(0)) nowtime = Now();
+  m_suspects[src2dst] = nowtime;
+}
+
+void Node::SetSuspiciousValidTime(Time validtime) {
+  NS_LOG_FUNCTION(this);
+  m_suspicious_validtime = validtime;
+}
+
+Time Node::GetSuspiciousValidTime() const {
+  NS_LOG_FUNCTION(this);
+  return m_suspicious_validtime;
 }
 
 Time
