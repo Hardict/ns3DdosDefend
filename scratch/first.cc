@@ -19,6 +19,8 @@
 #include "ns3/internet-module.h"
 #include "ns3/network-module.h"
 #include "ns3/point-to-point-module.h"
+#include "ns3/flow-monitor-helper.h"
+#include "ns3/ipv4-flow-classifier.h"
 
 // Default Network Topology
 //
@@ -31,6 +33,22 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("FirstScriptExample");
 
+void ThroughputMonitor (FlowMonitorHelper *flowMonitorHelper, Ptr<FlowMonitor> flowMonitor){
+  NS_LOG_INFO(Now());
+  flowMonitor->CheckForLostPackets();
+  std::map<FlowId, FlowMonitor::FlowStats> flowStats = flowMonitor->GetFlowStats();
+  Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowMonitorHelper->GetClassifier());
+  for (auto item:flowStats) {
+    // FiveTuple五元组是：(source-ip, destination-ip, protocol, source-port, destination-port)
+    auto tmp = classifier->FindFlow (item.first);
+    NS_LOG_INFO(tmp.sourceAddress << " " <<
+                tmp.sourcePort << " " <<
+                tmp.destinationAddress << " " <<
+                tmp.destinationPort);
+  }
+  Simulator::Schedule(Seconds(1.), &ThroughputMonitor, flowMonitorHelper, flowMonitor);
+}
+
 int main(int argc, char *argv[]) {
   CommandLine cmd(__FILE__);
   cmd.Parse(argc, argv);
@@ -38,9 +56,11 @@ int main(int argc, char *argv[]) {
   Time::SetResolution(Time::NS);
   LogComponentEnable("UdpEchoClientApplication", LOG_LEVEL_INFO);
   LogComponentEnable("UdpEchoServerApplication", LOG_LEVEL_INFO);
+  LogComponentEnable("FirstScriptExample", LOG_LEVEL_ALL);
 
   NodeContainer nodes;
   nodes.Create(2);
+
 
   PointToPointHelper pointToPoint;
   pointToPoint.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
@@ -57,6 +77,10 @@ int main(int argc, char *argv[]) {
 
   Ipv4InterfaceContainer interfaces = address.Assign(devices);
 
+  Ptr<FlowMonitor> flowMonitor;
+  FlowMonitorHelper flowMonitorHelper;
+  flowMonitor = flowMonitorHelper.Install(nodes);
+
   UdpEchoServerHelper echoServer(9);
 
   ApplicationContainer serverApps = echoServer.Install(nodes.Get(1));
@@ -64,15 +88,21 @@ int main(int argc, char *argv[]) {
   serverApps.Stop(Seconds(10.0));
 
   UdpEchoClientHelper echoClient(interfaces.GetAddress(1), 9);
-  echoClient.SetAttribute("MaxPackets", UintegerValue(1));
+  echoClient.SetAttribute("MaxPackets", UintegerValue(3));
   echoClient.SetAttribute("Interval", TimeValue(Seconds(1.0)));
   echoClient.SetAttribute("PacketSize", UintegerValue(1024));
 
-  ApplicationContainer clientApps = echoClient.Install(nodes.Get(0));
+  ApplicationContainer clientApps = echoClient.Install(nodes.Get(1));
   clientApps.Start(Seconds(2.0));
   clientApps.Stop(Seconds(10.0));
   
+  // std::stringstream stmp;
+  // stmp << "./first.flowmon";
+
+  Simulator::Schedule(Seconds(1.0), ThroughputMonitor, &flowMonitorHelper, flowMonitor);
+  Simulator::Stop(Seconds(10.));
   Simulator::Run();
+  // flowMonitor->SerializeToXmlFile (stmp.str ().c_str (), true, true);
   Simulator::Destroy();
   return 0;
 }

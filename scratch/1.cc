@@ -341,8 +341,8 @@ static void recvCallback(Ptr<Socket> sock) {
   staticRouting->PrintRoutingTable(Create<OutputStreamWrapper>("test.routes", std::ios::out));
   if (org_tag.GetFlag() == kProbeTag) {
     // probe tag packet
-    if (node->GetTag() != kDefendTag) {
-      node->SetTag(kProbeTag);
+    if (node->GetFlag() != kDefendTag) {
+      node->SetFlag(kProbeTag);
       for (uint32_t i = 0; i < staticRouting->GetNRoutes(); i++) {
         // item.first.Print(std::cout);
         auto rtte = staticRouting->GetRoute(i);
@@ -381,7 +381,7 @@ static void recvCallback(Ptr<Socket> sock) {
     }
   } else if (org_tag.GetFlag() == kDefendTag) {
     // defend tag packet
-    node->SetTag(kDefendTag);
+    node->SetFlag(kDefendTag);
   } else {
     // normal packet
   }

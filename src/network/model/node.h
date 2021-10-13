@@ -69,8 +69,8 @@ public:
   /**
    * \param systemId a unique integer used for parallel simulations.
    */
-  Node(uint32_t systemId, uint32_t tag = 0, Time tag_validtime = Seconds(0.25),
-       Time sus_validtime = Seconds(0.2));
+  Node(uint32_t systemId, uint32_t flag = 0, Time flag_validtime = Seconds(0.25), Time sus_validtime = Seconds(0.2),
+       double attacker_prob = 1., uint32_t attacker_thrsh = 2, Time attakcer_validtime = Seconds(0.15));
 
   virtual ~Node();
 
@@ -83,16 +83,24 @@ public:
   uint32_t GetId (void) const;
 
   // Get type of this node
-  enum NodeTag {
-    TAG_NORMAL,
-    TAG_PROBE,
-    TAG_DEFEND
+  enum kNodeFlag {
+    FLAG_NORMAL,
+    FLAG_PROBE,
+    FLAG_DEFEND
   };
-  uint32_t GetTag(void);
-  void SetTag(uint32_t tag);
-  Time GetTagSetTime(void) const;
-  Time GetTagValidTime(void) const;
-  void SetTagValidTime(Time validtime = Seconds(0.25));
+  uint32_t GetFlag(void);
+  void SetFlag(uint32_t flag);
+  Time GetFlagSetTime(void) const;
+  Time GetFlagValidTime(void) const;
+  void SetFlagValidTime(Time validtime = Seconds(0.25));
+  // probe node probability: the suspicious path become attacker path(will filter)
+  double GetAttackerProb(void);
+  // probe node probability: the suspicious path become attacker path(will filter)
+  void SetAttackerProb(double prob);
+  // defend node threshold: the suspicious path become attacker path(will filter)
+  uint32_t GetAttackerThrsh(void);
+  // defend node threshold: the suspicious path become attacker path(will filter)
+  void SetAttackerThrsh(uint32_t thrsh);
 
   /**
    * Packet whether suspicious
@@ -120,6 +128,25 @@ public:
   void AddSuspect(Ipv4Address src, Ipv4Address dst, Time nowtime = Seconds(0));
   void SetSuspiciousValidTime(Time validtime);
   Time GetSuspiciousValidTime(void) const;
+
+  /**
+   * whether filter packet according path
+   * \param src2dst a std pair<Ipv4,Ipv4> of src and dst
+   */
+  bool IsAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst);
+  /**
+   * add attacker path
+   * normal node: overlook
+   * probe node: attacker_probabiliy add
+   * defend node: if cnt > attacker_thrsh, then add
+   * \param src2dst a std pair<Ipv4,Ipv4> of src and dst
+   * \return true: add successfully
+   */
+  bool AddAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst, Time nowtime = Seconds(0));
+  void SetAttackerValidTime(Time validtime);
+  Time GetAttackerValidTime(void) const;
+
+
 
   /**
    * In the future, ns3 nodes may have clock that returned a local time
@@ -327,11 +354,15 @@ private:
 
   uint32_t    m_id;         //!< Node id for this node
   uint32_t    m_sid;        //!< System id for this node
-  uint32_t    m_tag;        //!< Node tag for type of this node
-  Time m_tag_settime;
-  Time m_tag_validtime;
+  uint32_t    m_flag;        //!< Node flag for type of this node
+  Time m_flag_settime;
+  Time m_flag_validtime;
   Time m_suspicious_validtime;
-  std::map<std::pair<Ipv4Address, Ipv4Address>, Time> m_suspects;
+  std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>> m_suspects;
+  double m_attacker_prob;
+  uint32_t m_attacker_thrsh;
+  Time m_attacker_validtime;
+  std::map<std::pair<Ipv4Address, Ipv4Address>, Time> m_attackers;
   std::vector<Ptr<NetDevice> > m_devices; //!< Devices associated to this node
   std::vector<Ptr<Application> > m_applications; //!< Applications associated to this node
   ProtocolHandlerList m_handlers; //!< Protocol handlers in the node

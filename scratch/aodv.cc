@@ -31,6 +31,7 @@
 #include "ns3/point-to-point-module.h"
 #include "ns3/v4ping-helper.h"
 #include "ns3/yans-wifi-helper.h"
+#include "ns3/flow-monitor-helper.h"
 
 using namespace ns3;
 
@@ -106,8 +107,8 @@ int main (int argc, char **argv)
 {
   // LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_ALL);
   // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
-  LogComponentEnable("UdpEchoClientApplication", LOG_LEVEL_ALL);
-  LogComponentEnable("UdpEchoServerApplication", LOG_LEVEL_ALL);
+  LogComponentEnable("UdpEchoClientApplication", LOG_LEVEL_INFO);
+  LogComponentEnable("UdpEchoServerApplication", LOG_LEVEL_INFO);
   AodvExample test;
   if (!test.Configure (argc, argv))
     NS_FATAL_ERROR ("Configuration failed. Aborted.");
@@ -157,8 +158,13 @@ AodvExample::Run ()
 
   std::cout << "Starting simulation for " << totalTime << " s ...\n";
 
+  Ptr<FlowMonitor> flowMonitor;
+  FlowMonitorHelper flowMonitorHelper;
+  flowMonitor = flowMonitorHelper.Install(nodes);
+
   Simulator::Stop (Seconds (totalTime));
   Simulator::Run ();
+  flowMonitor->SerializeToXmlFile("./aodv.flowmon",true,true);
   Simulator::Destroy ();
 }
 
@@ -247,9 +253,11 @@ AodvExample::InstallApplications ()
   echoClient.Install (nodes.Get (0));
   clientApps.Start (Seconds (2.0));
   clientApps.Stop (Seconds (totalTime));
-  nodes.Get(4)->SetTag(Node::NodeTag::TAG_DEFEND);
-  nodes.Get(4)->SetTagValidTime(Seconds(4));
+  nodes.Get(4)->SetFlag(Node::kNodeFlag::FLAG_PROBE);
+  nodes.Get(4)->SetFlagValidTime(Seconds(5));
   nodes.Get(4)->AddSuspect(interfaces.GetAddress(0), interfaces.GetAddress(size-1));
-  nodes.Get(4)->SetSuspiciousValidTime(Seconds(3.5));
+  nodes.Get(4)->SetSuspiciousValidTime(Seconds(4.5));
+  nodes.Get(4)->AddAttacker(std::make_pair(interfaces.GetAddress(0), interfaces.GetAddress(size-1)));
+  nodes.Get(4)->SetAttackerValidTime(Seconds(4.5));
 }
 
