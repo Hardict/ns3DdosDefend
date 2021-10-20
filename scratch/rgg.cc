@@ -52,9 +52,9 @@ int main(int argc, char *argv[]) {
 
   MobilityHelper mobility;
   mobility.SetPositionAllocator(
-      "ns3::RandomDiscPositionAllocator", "X", StringValue("100.0"), "Y",
-      StringValue("100.0"), "Rho",
-      StringValue("ns3::UniformRandomVariable[Min=0|Max=300]"));
+      "ns3::RandomDiscPositionAllocator", "X", StringValue("100.0"),
+      "Y", StringValue("100.0"),
+      "Rho", StringValue("ns3::UniformRandomVariable[Min=0|Max=300]"));
   //并且固定每一个节点
   mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   mobility.Install(adHocNodes);

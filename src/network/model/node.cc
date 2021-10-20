@@ -152,6 +152,8 @@ uint32_t Node::GetFlag(void){
       Now() - GetFlagSetTime() > GetFlagValidTime()) {
     NS_LOG_INFO("node become normal because of exceed valid time.");
     SetFlag(kNodeFlag::FLAG_NORMAL);
+    std::map<uint32_t, Time>().swap(m_received_pids);
+    // m_received_pids.clear();
     m_suspects.clear();
     m_attackers.clear();
   }
@@ -171,6 +173,21 @@ Time Node::GetFlagValidTime(void) const {
 void Node::SetFlagValidTime(Time validtime) {
   NS_LOG_FUNCTION(this);
   m_flag_validtime = validtime;
+}
+
+bool Node::IsReceivedPid(uint32_t pid) {
+  NS_LOG_FUNCTION(this);
+  if (m_received_pids.find(pid) == m_received_pids.end()) return false;
+  if (Now() - m_received_pids[pid] > m_flag_validtime){
+    m_received_pids.erase(pid);
+    return false;
+  }
+  return true;
+}
+
+void Node::AddReceivedPid(uint32_t pid){
+  NS_LOG_FUNCTION(this);
+  m_received_pids[pid] = Now();
 }
 
 bool Node::IsSuspect(Ipv4Address src, Ipv4Address dst) {

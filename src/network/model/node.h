@@ -93,6 +93,8 @@ public:
   Time GetFlagSetTime(void) const;
   Time GetFlagValidTime(void) const;
   void SetFlagValidTime(Time validtime = Seconds(0.25));
+  bool IsReceivedPid(uint32_t pid);
+  void AddReceivedPid(uint32_t pid);
   // probe node probability: the suspicious path become attacker path(will filter)
   double GetAttackerProb(void);
   // probe node probability: the suspicious path become attacker path(will filter)
@@ -357,6 +359,7 @@ private:
   uint32_t    m_flag;        //!< Node flag for type of this node
   Time m_flag_settime;
   Time m_flag_validtime;
+  std::map<uint32_t, Time> m_received_pids;
   Time m_suspicious_validtime;
   std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>> m_suspects;
   double m_attacker_prob;
