@@ -595,12 +595,11 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
     // node->SetTag(Node::NodeTag::TAG_NORMAL);
     // } else 
     auto src2dst = std::make_pair(header.GetSource(), header.GetDestination());
-    if (node->IsSuspect(src2dst)){ 
+    if (node->IsSuspect(src2dst))
       node->AddAttacker(src2dst); // node.cc中判断是否变成攻击者
-      if (node->IsAttacker(src2dst)) {
-        NS_LOG_INFO("Drop the packet because of the pair(src,dst) is attack path.");
-        return false;
-      }
+    if (node->IsAttacker(src2dst)){
+      NS_LOG_INFO("Drop the packet because of the pair(src,dst) is attack path.");
+      return false;
     }
   }
   return Forwarding(p, header, ucb, ecb);
