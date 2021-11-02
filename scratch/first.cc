@@ -33,6 +33,20 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("FirstScriptExample");
 
+void recvNormal(Ptr<Socket> sock) {
+  NS_LOG_DEBUG(Now().GetSeconds() << "s, Normal");
+  Address org_src;
+  Ptr<Packet> packet;
+  while(packet = sock->RecvFrom(org_src)){
+    InetSocketAddress inet_src = InetSocketAddress::ConvertFrom(org_src);
+    NS_LOG_DEBUG("received a normal packet from " << inet_src.GetIpv4() << " "
+                                                  << inet_src.GetPort());
+    Ptr<Packet> pck = Create<Packet>();
+    sock->SendTo(pck,0,org_src);
+  }
+  Simulator::Schedule(Seconds(1.0), &recvNormal, sock);
+}
+
 void ThroughputMonitor (FlowMonitorHelper *flowMonitorHelper, Ptr<FlowMonitor> flowMonitor){
   NS_LOG_INFO(Now());
   flowMonitor->CheckForLostPackets();
@@ -56,6 +70,7 @@ int main(int argc, char *argv[]) {
   Time::SetResolution(Time::NS);
   LogComponentEnable("UdpEchoClientApplication", LOG_LEVEL_INFO);
   LogComponentEnable("UdpEchoServerApplication", LOG_LEVEL_INFO);
+  // LogComponentEnable("UdpSocketImpl", LOG_LEVEL_ALL);
   LogComponentEnable("FirstScriptExample", LOG_LEVEL_ALL);
 
   NodeContainer nodes;
@@ -81,28 +96,30 @@ int main(int argc, char *argv[]) {
   FlowMonitorHelper flowMonitorHelper;
   flowMonitor = flowMonitorHelper.Install(nodes);
 
-  UdpEchoServerHelper echoServer(9);
-
-  ApplicationContainer serverApps = echoServer.Install(nodes.Get(1));
-  serverApps.Start(Seconds(1.0));
-  serverApps.Stop(Seconds(10.0));
+  // Config::SetDefault("ns3::UdpSocket::RcvBufSize", UintegerValue(1<<10));
+  TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
+  Ptr<Socket> recv = Socket::CreateSocket(nodes.Get(1), tid);
+  recv->Bind(InetSocketAddress(Ipv4Address::GetAny(), 9));
+  // recv->SetRecvCallback(MakeCallback(&recvNormalCallback));
+  recv->SetAttribute("RcvBufSize", UintegerValue(1<<11));
+  Simulator::Schedule(Seconds(1e-9), &recvNormal, recv);
 
   UdpEchoClientHelper echoClient(interfaces.GetAddress(1), 9);
-  echoClient.SetAttribute("MaxPackets", UintegerValue(3));
-  echoClient.SetAttribute("Interval", TimeValue(Seconds(1.0)));
+  echoClient.SetAttribute("MaxPackets", UintegerValue(10));
+  echoClient.SetAttribute("Interval", TimeValue(Seconds(0.4)));
   echoClient.SetAttribute("PacketSize", UintegerValue(1024));
 
-  ApplicationContainer clientApps = echoClient.Install(nodes.Get(1));
+  ApplicationContainer clientApps = echoClient.Install(nodes.Get(0));
   clientApps.Start(Seconds(2.0));
   clientApps.Stop(Seconds(10.0));
   
-  // std::stringstream stmp;
-  // stmp << "./first.flowmon";
 
-  Simulator::Schedule(Seconds(1.0), ThroughputMonitor, &flowMonitorHelper, flowMonitor);
+  // Simulator::Schedule(Seconds(1.0), ThroughputMonitor, &flowMonitorHelper, flowMonitor);
   Simulator::Stop(Seconds(10.));
   Simulator::Run();
-  // flowMonitor->SerializeToXmlFile (stmp.str ().c_str (), true, true);
+  std::stringstream stmp;
+  stmp << "./first.flowmon";
+  flowMonitor->SerializeToXmlFile (stmp.str ().c_str (), true, true);
   Simulator::Destroy();
   return 0;
 }

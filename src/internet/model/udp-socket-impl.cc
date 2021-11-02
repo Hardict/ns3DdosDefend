@@ -19,6 +19,7 @@
  */
 
 #include "ns3/log.h"
+#include "ns3/timer.h"
 #include "ns3/node.h"
 #include "ns3/inet-socket-address.h"
 #include "ns3/inet6-socket-address.h"
@@ -1041,6 +1042,8 @@ UdpSocketImpl::ForwardUp (Ptr<Packet> packet, Ipv4Header header, uint16_t port,
       Address address = InetSocketAddress (header.GetSource (), port);
       m_deliveryQueue.push (std::make_pair (packet, address));
       m_rxAvailable += packet->GetSize ();
+      NS_LOG_DEBUG(Now() << ", m_rxAvailable:" << m_rxAvailable << ", m_rcvBufSize:" << m_rcvBufSize
+                         << ", m_deliveryQueueSize:"<< m_deliveryQueue.size());
       NotifyDataRecv ();
     }
   else
