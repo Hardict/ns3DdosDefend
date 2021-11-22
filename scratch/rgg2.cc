@@ -17,19 +17,19 @@ using namespace std;
 
 NS_LOG_COMPONENT_DEFINE("MyCode");
 
-double kProbContinue = 50; // %
-double kProbNew = 50;
+double kProbProbeContinue = 50;  // %
+double kProbDefendContinue = 50;
 // Node::kNodeFlag::FLAG_NORMAL = 0;
 // Node::kNodeFlag::FLAG_PROBE = 1;
 // Node::kNodeFlag::FLAG_DEFEND = 2;
 uint32_t kProbePort = 2333;
-uint32_t kProbeTtl = 4;
-uint32_t kDefendTtl = 4;
-uint32_t kPacketSize = 1 << 10;
-uint32_t kMaxPacketsEverySeconds = 50;  // 每秒至多发1个包
+uint32_t kProbeTtl = 3;
+uint32_t kDefendTtl = 3;
+uint32_t kPacketSize = 1 << 6;
+uint32_t kMaxPacketsEverySeconds = 50;  // 每秒至多发x个包
 // 每1s更新一次
 double kUpdateTime = 0.5;
-uint32_t kAttackerRate = kMaxPacketsEverySeconds * 4;
+uint32_t kAttackerRate = kMaxPacketsEverySeconds;
 uint32_t kClientRate = 2;
 using filterPair =
     std::pair<Ipv4Address, Ipv4Address>;  // suspicious path: Attacker>>Victim
@@ -64,9 +64,12 @@ std::ostream &operator<<(std::ostream &os, MyTag const &mytag) {
 
 std::set<Ipv4Address> Sclientip;
 uint32_t cnt_recvnormalpacket;
-//模拟服务器接受，每隔一段时间(1s)统一接受，利用套接字缓冲队列溢出模拟服务器处理能力
+// 模拟服务器接受，每隔一段时间(1s)统一接受，利用套接字缓冲队列溢出模拟服务器处理能力
 void RecvNormal(Ptr<Socket> sock);
-void RecvProbeCallback(Ptr<Socket> sock);
+// 收到特殊包并转发
+void RecvSpecailCallback(Ptr<Socket> sock);
+// 绑定在Aodv协议中对CallBack，用于同步(激活)防御包发送
+void AodvSendDependPacket(Ptr<Node> node, filterPair src2dst);
 void SendSpecialPacket(Ptr<Socket> sock, InetSocketAddress dst, uint32_t flag,
                        uint32_t ttl, uint32_t pid,
                        std::set<filterPair> filterpairs);
@@ -93,6 +96,7 @@ int main(int argc, char *argv[]) {
   // LogComponentEnable("UdpEchoServerApplication", LOG_LEVEL_INFO);
   // LogComponentEnable("Node", LOG_LEVEL_INFO);
   // LogComponentEnable("PacketSink", LOG_LEVEL_ALL);
+  // LogComponentEnable("DefaultSimulatorImpl", LOG_LEVEL_ALL);
 
   uint32_t nAdHocNum = 60;
   uint32_t nStep = 50;
@@ -106,16 +110,18 @@ int main(int argc, char *argv[]) {
   cmd.AddValue("nNs3Seed", "ns3 random seed", nNs3Seed);
   cmd.AddValue("nSrandSeed", "c++ random seed", nSrandSeed);
   cmd.AddValue("nOutFileId", "nOutFileId", nOutFileId);
-  cmd.AddValue("kProbContinue", "kProbContinue p%", kProbContinue);
-  cmd.AddValue("kProbNew", "kProbNew p%", kProbNew);
+  cmd.AddValue("kProbProbeContinue", "kProbProbeContinue p%",
+               kProbProbeContinue);
+  cmd.AddValue("kProbDefendContinue", "kProbDefendContinue p%",
+               kProbDefendContinue);
   cmd.AddValue("kProbeTtl", "kProbeTtl", kProbeTtl);
   cmd.AddValue("kDefendTtl", "kDefendTtl", kDefendTtl);
   cmd.AddValue("kPacketSize", "kPacketSize", kPacketSize);
   cmd.AddValue("kPacketMaxSpeed", "kPacketMaxSpeed", kMaxPacketsEverySeconds);
   cmd.AddValue("kUpdateTime", "kUpdateTime", kUpdateTime);
   cmd.Parse(argc, argv);
-  kProbContinue/=100.;
-  kProbNew/=100.;
+  kProbProbeContinue /= 100.;
+  kProbDefendContinue /= 100.;
   // srand((unsigned)time(nullptr));
   srand(nSrandSeed);
 
@@ -129,8 +135,8 @@ int main(int argc, char *argv[]) {
     adhoc_nodes.Get(i)->SetSuspiciousValidTime(Seconds(kUpdateTime * 9.));
     adhoc_nodes.Get(i)->SetAttackerValidTime(Seconds(kUpdateTime * 8.));
     uint32_t tmp = (uint32_t)(kUpdateTime * 8. * kMaxPacketsEverySeconds);
-    adhoc_nodes.Get(i)->SetAttackerThrsh(tmp);
-    adhoc_nodes.Get(i)->SetAttackerProb(1. / tmp);
+    adhoc_nodes.Get(i)->SetAttackerThrsh(2);
+    adhoc_nodes.Get(i)->SetAttackerProb(0.125);
   }
 
   YansWifiChannelHelper channel = YansWifiChannelHelper::Default();
@@ -156,10 +162,15 @@ int main(int argc, char *argv[]) {
       StringValue("ns3::UniformRandomVariable[Min=0|Max=250]"), "Y",
       StringValue("ns3::UniformRandomVariable[Min=0|Max=250]"));
   mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+  // mobility.SetMobilityModel(
+  //     "ns3::RandomWalk2dMobilityModel", "Mode", StringValue("Time"), "Time",
+  //     StringValue("2s"), "Speed",
+  //     StringValue("ns3::UniformRandomVariable[Min=2.5|Max=5.0]"), "Bounds",
+  //     RectangleValue(Rectangle(0.0, 250.0, 0.0, 250.0)));
   mobility.Install(adhoc_nodes);
 
   AodvHelper aodv;
-  aodv.Set("HelloInterval", TimeValue(Seconds(2.)));
+  // aodv.Set("HelloInterval", TimeValue(Seconds(2.)));
   Ipv4StaticRoutingHelper static_routing;
   Ipv4ListRoutingHelper list;
   list.Add(static_routing, 0);
@@ -168,12 +179,22 @@ int main(int argc, char *argv[]) {
   internet.SetRoutingHelper(list);
   internet.Install(adhoc_nodes);
 
+  // 在aodv协议中绑定防御包发送
+  for (uint32_t i = 0; i < nAdHocNum; ++i) {
+    Ptr<Ipv4L3Protocol> ipl3p = adhoc_nodes.Get(i)->GetObject<Ipv4L3Protocol>();
+    Ptr<Ipv4RoutingProtocol> iprtp = ipl3p->GetRoutingProtocol();
+    Ptr<aodv::RoutingProtocol> aodv_rtp =
+        AodvHelper::GetRouting<aodv::RoutingProtocol>(iprtp);
+    aodv_rtp->SetDefendCallback(MakeCallback(&AodvSendDependPacket));
+  }
+
   Ipv4AddressHelper address;
   address.SetBase("195.1.1.0", "255.255.255.0");
 
   Ipv4InterfaceContainer adhoc_ipv4;
   adhoc_ipv4 = address.Assign(adhoc_devices);
 
+  // 流量监控
   Ptr<FlowMonitor> flowMonitor;
   FlowMonitorHelper flowMonitorHelper;
   flowMonitor = flowMonitorHelper.Install(adhoc_nodes);
@@ -183,17 +204,18 @@ int main(int argc, char *argv[]) {
   for (uint32_t i = 0; i < adhoc_nodes.GetN(); i++) {
     Ptr<Socket> recvProbeSocket = Socket::CreateSocket(adhoc_nodes.Get(i), tid);
     recvProbeSocket->Bind(InetSocketAddress(Ipv4Address::GetAny(), kProbePort));
-    recvProbeSocket->SetRecvCallback(MakeCallback(&RecvProbeCallback));
+    recvProbeSocket->SetRecvCallback(MakeCallback(&RecvSpecailCallback));
+    // 安排间隔流量监控，激活探测包发送
     Simulator::Schedule(Seconds(1e-9), ThroughputMonitor, &flowMonitorHelper,
                         flowMonitor, recvProbeSocket,
                         std::map<FlowId, uint32_t>{});
   }
 
-  double total_time = 20.0;
-  double send_time = 10.0;
+  double send_time = 20;
+  double total_time = send_time + 10;
   uint32_t recvid = 31;
   std::default_random_engine rng(nSrandSeed);
-  std::uniform_real_distribution<double> uni(0., 2e-3);
+  std::uniform_real_distribution<double> uni(1e-6, 2e-3);
   OnOffHelper onOffAttack(
       "ns3::UdpSocketFactory",
       Address(InetSocketAddress(adhoc_ipv4.GetAddress(recvid), normalport)));
@@ -207,10 +229,9 @@ int main(int argc, char *argv[]) {
 
   NodeContainer attackers;
   {
-    vector<uint32_t> V{4,35,20,0,40,24};
+    vector<uint32_t> V{4, 35, 20, 0, 40, 24};
     shuffle(V.begin(), V.end(), rng);
-    for (auto x:V)
-      attackers.Add(adhoc_nodes.Get(x));
+    for (auto x : V) attackers.Add(adhoc_nodes.Get(x));
   }
   ApplicationContainer appAttacker = onOffAttack.Install(attackers);
   appAttacker.Start(Seconds(1.5 + uni(rng)));
@@ -229,9 +250,10 @@ int main(int argc, char *argv[]) {
 
   NodeContainer clients;
   {
-    vector<uint32_t> V{34,48,33,13,56,10};
+    vector<uint32_t> V{34, 48, 33, 13, 56, 10, 1,  22, 44,
+                       5,  6,  7,  15, 16, 17, 51, 52, 53};
     shuffle(V.begin(), V.end(), rng);
-    for (auto x:V){
+    for (auto x : V) {
       clients.Add(adhoc_nodes.Get(x));
       Sclientip.insert(adhoc_ipv4.GetAddress(x));
     }
@@ -246,10 +268,12 @@ int main(int argc, char *argv[]) {
   // appRecv.Start(Seconds(0.0));
   // appRecv.Stop(Seconds(total_time));
 
+  // 设置服务器接受套接字，并设置Buffer大小
   Ptr<Socket> recvsocket = Socket::CreateSocket(adhoc_nodes.Get(recvid), tid);
   recvsocket->Bind(InetSocketAddress(Ipv4Address::GetAny(), normalport));
   recvsocket->SetAttribute(
       "RcvBufSize", UintegerValue(kPacketSize * kMaxPacketsEverySeconds));
+  // 间隔接受Buffer中数据，以Buffer满模拟服务器处理达到上界以此模拟服务器处理能力
   Simulator::Schedule(Seconds(1e-9), &RecvNormal, recvsocket);
 
   // phy.EnablePcap("rgg2", adhoc_devices);
@@ -262,8 +286,9 @@ int main(int argc, char *argv[]) {
 
   std::stringstream flowmonfile;
   flowmonfile.precision(2);
-  flowmonfile << "./rgg2data/test2_" << std::setiosflags(ios::fixed) << kProbContinue << "_" 
-              << std::setiosflags(ios::fixed) <<  kProbNew << "_" << nOutFileId << ".flowmon";
+  flowmonfile << "./rgg2data/smallpacket_" << std::setiosflags(ios::fixed)
+              << kProbProbeContinue << "_" << std::setiosflags(ios::fixed)
+              << kProbDefendContinue << "_" << nOutFileId << ".flowmon";
   // flowMonitor->SerializeToXmlFile(flowmonfile.str(), false, false);
 
   {
@@ -273,8 +298,10 @@ int main(int argc, char *argv[]) {
         DynamicCast<Ipv4FlowClassifier>(flowMonitorHelper.GetClassifier());
     std::stringstream flowmonfile_simple;
     flowmonfile_simple.precision(2);
-    flowmonfile_simple << "./test_" << std::setiosflags(ios::fixed) << kProbContinue << "_" 
-                       << std::setiosflags(ios::fixed) << kProbNew << "_" << nOutFileId << ".out";
+    flowmonfile_simple << "./rgg2data/moreNodes20s_"
+                       << std::setiosflags(ios::fixed) << kProbProbeContinue
+                       << "_" << std::setiosflags(ios::fixed)
+                       << kProbDefendContinue << "_" << nOutFileId << ".out";
     std::ofstream outfile(flowmonfile_simple.str());
     std::map<Ipv4Address, string> MP;
     std::vector<uint32_t> V;
@@ -282,7 +309,10 @@ int main(int argc, char *argv[]) {
     V.push_back(0), V.push_back(40), V.push_back(24);
     V.push_back(34), V.push_back(48), V.push_back(33);
     V.push_back(13), V.push_back(56), V.push_back(10);
-    // V.push_back(1), V.push_back(22), V.push_back(44);
+    V.push_back(1), V.push_back(22), V.push_back(44);
+    V.push_back(5), V.push_back(6), V.push_back(7);
+    V.push_back(15), V.push_back(16), V.push_back(17);
+    V.push_back(51), V.push_back(52), V.push_back(53);
     uint32_t txcnt = 0, rxcnt = 0;
     for (auto item : flowStats) {
       // FiveTuple五元组是：(source-ip, destination-ip, protocol, source-port,
@@ -314,8 +344,8 @@ int main(int argc, char *argv[]) {
 }
 
 void RecvNormal(Ptr<Socket> sock) {
-  NS_LOG_DEBUG(Now().GetSeconds() << "s, Normal");
-  std::cout << Now().GetSeconds() << "s, Normal" << std::endl;
+  NS_LOG_DEBUG(Now().GetSeconds() << ", Normal");
+  std::cout << Now().GetSeconds() << ", Normal" << std::endl;
   Address org_src;
   Ptr<Packet> packet;
   while (packet = sock->RecvFrom(org_src)) {
@@ -330,7 +360,7 @@ void RecvNormal(Ptr<Socket> sock) {
   Simulator::Schedule(Seconds(1.0), &RecvNormal, sock);
 }
 
-void RecvProbeCallback(Ptr<Socket> sock) {
+void RecvSpecailCallback(Ptr<Socket> sock) {
   NS_LOG_DEBUG("Probe Callback");
   Address org_src;
   Ptr<Packet> packet = sock->RecvFrom(org_src);
@@ -347,6 +377,8 @@ void RecvProbeCallback(Ptr<Socket> sock) {
   Ptr<Node> node = sock->GetNode();
   if (node->IsReceivedPid(org_tag.GetPid())) return;
   node->AddReceivedPid(org_tag.GetPid());
+  Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+  Ipv4Address nodeip = ipv4->GetAddress(1, 0).GetLocal();
 
   Ptr<Ipv4L3Protocol> ipl3p = node->GetObject<Ipv4L3Protocol>();
   Ptr<Ipv4RoutingProtocol> iprtp = ipl3p->GetRoutingProtocol();
@@ -354,64 +386,67 @@ void RecvProbeCallback(Ptr<Socket> sock) {
       AodvHelper::GetRouting<aodv::RoutingProtocol>(iprtp);
   aodv::RoutingTable aodv_rtt = aodv_rtp->GetRoutingTable();
   std::default_random_engine rng(rand());
-  std::uniform_real_distribution<double> uni(0., 2e-3);
+  std::uniform_real_distribution<double> uni(1e-6, 2e-3);
   if (org_tag.GetFlag() != Node::kNodeFlag::FLAG_NORMAL) {
-    // if (node->GetFlag() == Node::kNodeFlag::FLAG_NORMAL) {
-    if (1) {
-      auto mp = aodv_rtt.GetMap();
-      set<Ipv4Address> tmp;
-      for (auto item : mp) {
-        aodv::RoutingTableEntry rtte = item.second;
-        // Ipv4Address dst = item.first;
-        // NS_LOG_DEBUG("dst: " << dst << ", rtte next hop: " <<
-        // rtte.GetNextHop());
-        Ipv4Address nexthop = rtte.GetNextHop();
-        if (nexthop.IsLocalhost() || nexthop.IsBroadcast() ||
-            nexthop.IsSubnetDirectedBroadcast(Ipv4Mask("255.255.255.0")) ||
-            nexthop == inet_src.GetIpv4())
-          continue;
-
-        // send probe packet to neighbor
-        // || (org_tag.GetFlag() == Node::kNodeFlag::FLAG_PROBE &&
-        // org_tag.GetFlagTtl() == kProbeTtl + 1)
-        if ((1.0 * rand() / RAND_MAX < kProbContinue &&
-             org_tag.GetFlagTtl() > 1)) {
-          if (tmp.find(nexthop) != tmp.end()) continue;
-          tmp.insert(nexthop);
-          NS_LOG_DEBUG(Now() << " send Origin packet to " << nexthop);
-          Simulator::Schedule(Seconds(uni(rng)), SendSpecialPacket, sock,
-                              InetSocketAddress(nexthop, kProbePort),
-                              org_tag.GetFlag(), org_tag.GetFlagTtl() - 1,
-                              org_tag.GetPid(), org_tag.GetFilterPairs());
-        }
-        // send new defend packet to neighbor
-        if (org_tag.GetFlag() == Node::kNodeFlag::FLAG_PROBE &&
-            1.0 * rand() / RAND_MAX < kProbNew) {
-          if (tmp.find(nexthop) != tmp.end()) continue;
-          tmp.insert(nexthop);
-          NS_LOG_DEBUG(Now() << " send Defend packet to " << nexthop);
-          Simulator::Schedule(Seconds(uni(rng)), SendSpecialPacket, sock,
-                              InetSocketAddress(nexthop, kProbePort),
-                              Node::kNodeFlag::FLAG_DEFEND, kDefendTtl,
-                              org_tag.GetPid(), org_tag.GetFilterPairs());
+    if (node->GetFlag() == Node::kNodeFlag::FLAG_NORMAL)
+      node->SetFlag(org_tag.GetFlag());
+    for (auto item : org_tag.GetFilterPairs()) {
+      node->AddSuspect(item);
+      if (node->GetFlag() == Node::kNodeFlag::FLAG_DEFEND) {
+        node->AddAttacker(item);
+        if (node->IsAttacker(item)) {
+          std::cout << "=======!!!!!!!=======" << std::endl;
+          std::cout << Names::FindName(node) << ": "
+                    << item.first << ">>>" << item.second << std::endl;
         }
       }
-      tmp.clear();
     }
-    // 检测节点
-    if (org_tag.GetFlag() == Node::kNodeFlag::FLAG_PROBE &&
-        org_tag.GetFlagTtl() == kProbeTtl + 1)
-      return;
-    if (node->GetFlag() == Node::kNodeFlag::FLAG_PROBE &&
-        org_tag.GetFlag() == Node::kNodeFlag::FLAG_DEFEND)
-      node->SetFlag(Node::kNodeFlag::FLAG_PROBE);  // 关键结点，延长时间
-    else
-      node->SetFlag(org_tag.GetFlag());
-    for (auto item : org_tag.GetFilterPairs()) node->AddSuspect(item);
+
+    auto mp = aodv_rtt.GetMap();
+    set<Ipv4Address> tmp;
+    for (auto item : mp) {
+      aodv::RoutingTableEntry rtte = item.second;
+      // Ipv4Address dst = item.first;
+      // NS_LOG_DEBUG("dst: " << dst << ", rtte next hop: " <<
+      // rtte.GetNextHop());
+      Ipv4Address nexthop = rtte.GetNextHop();
+      if (nexthop.IsLocalhost() || nexthop.IsBroadcast() ||
+          nexthop.IsSubnetDirectedBroadcast(Ipv4Mask("255.255.255.0")) ||
+          nexthop == inet_src.GetIpv4())
+        continue;
+
+      // send probe packet to neighbor
+      double rnd = 1. * rand() / RAND_MAX;
+      if (org_tag.GetFlagTtl() >= 1) {
+        if (org_tag.GetFlag() == Node::kNodeFlag::FLAG_PROBE &&
+            rnd > kProbProbeContinue)
+          continue;
+        if (org_tag.GetFlag() == Node::kNodeFlag::FLAG_DEFEND &&
+            rnd > kProbDefendContinue)
+          continue;
+        if (tmp.find(nexthop) != tmp.end()) continue;
+        tmp.insert(nexthop);
+        NS_LOG_DEBUG(Now() << " forward packet to " << nexthop);
+        SendSpecialPacket(sock, InetSocketAddress(nexthop, kProbePort),
+                          org_tag.GetFlag(), org_tag.GetFlagTtl() - 1,
+                          org_tag.GetPid(), org_tag.GetFilterPairs());
+      }
+    }
+    tmp.clear();
   } else {
     // normal packet
     NS_LOG_DEBUG("???");
   }
+}
+
+void AodvSendDependPacket(Ptr<Node> node, filterPair src2dst) {
+  Ptr<Socket> sock =
+      Socket::CreateSocket(node, TypeId::LookupByName("ns3::UdpSocketFactory"));
+  Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+  Ipv4Address nodeip = ipv4->GetAddress(1, 0).GetLocal();
+  std::set<filterPair> S{src2dst};
+  SendSpecialPacket(sock, InetSocketAddress(nodeip, kProbePort),
+                    Node::kNodeFlag::FLAG_DEFEND, kDefendTtl, rand(), S);
 }
 
 void SendSpecialPacket(Ptr<Socket> sock, InetSocketAddress dst, uint32_t flag,
@@ -448,7 +483,8 @@ void ThroughputMonitor(FlowMonitorHelper *flowMonitorHelper,
     auto tmp = classifier->FindFlow(item.first);
     // a flow other >>> node
     if (tmp.destinationAddress == nodeip &&
-        tmp.destinationPort != aodv::RoutingProtocol::AODV_PORT) {
+        tmp.destinationPort != aodv::RoutingProtocol::AODV_PORT &&
+        tmp.sourceAddress != nodeip) {
       // 流量监测
       uint32_t delta = item.second.rxPackets - rxMP[item.first];
       num += delta;
@@ -462,6 +498,8 @@ void ThroughputMonitor(FlowMonitorHelper *flowMonitorHelper,
     std::set<filterPair> S1;
     for (auto item : S) {
       NS_LOG_DEBUG("suspicious path: " << item << " >> " << nodeip);
+      std::cout << Now() << "s, "
+                << "suspicious path: " << item << " >> " << nodeip << std::endl;
       S1.insert(std::make_pair(item, nodeip));
     }
     Simulator::ScheduleNow(SendSpecialPacket, sock,

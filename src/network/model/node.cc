@@ -276,7 +276,7 @@ bool Node::AddAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst, Time nowtime
   if (nowtime == Seconds(0)) nowtime = Now();
   if (GetFlag() == kNodeFlag::FLAG_DEFEND) {
     m_suspects[src2dst].second++;
-    if (m_suspects[src2dst].second > m_attacker_thrsh){
+    if (m_suspects[src2dst].second >= m_attacker_thrsh){
       m_suspects[src2dst].second = 0;
       m_attackers[src2dst] = nowtime;
       return true;
