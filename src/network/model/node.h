@@ -70,7 +70,7 @@ public:
    * \param systemId a unique integer used for parallel simulations.
    */
   Node(uint32_t systemId, uint32_t flag = 0, Time flag_validtime = Seconds(0.25), Time sus_validtime = Seconds(0.2),
-       double attacker_prob = 1., uint32_t attacker_thrsh = 2, Time attakcer_validtime = Seconds(0.15));
+       double attacker_prob = 1., uint32_t defend_attacker_thrsh = 2, uint32_t probe_attacker_thrsh = 2, Time attakcer_validtime = Seconds(0.15));
 
   virtual ~Node();
 
@@ -100,9 +100,11 @@ public:
   // probe node probability: the suspicious path become attacker path(will filter)
   void SetAttackerProb(double prob);
   // defend node threshold: the suspicious path become attacker path(will filter)
-  uint32_t GetAttackerThrsh(void);
+  uint32_t GetDefendAttackerThrsh(void);
   // defend node threshold: the suspicious path become attacker path(will filter)
-  void SetAttackerThrsh(uint32_t thrsh);
+  void SetDefendAttackerThrsh(uint32_t thrsh);
+  uint32_t GetProbeAttackerThrsh(void);
+  void SetProbeAttackerThrsh(uint32_t thrsh);
 
   /**
    * Packet whether suspicious
@@ -363,7 +365,8 @@ private:
   Time m_suspicious_validtime;
   std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>> m_suspects;
   double m_attacker_prob;
-  uint32_t m_attacker_thrsh;
+  uint32_t m_defend_attacker_thrsh;
+  uint32_t m_probe_attacker_thrsh;
   Time m_attacker_validtime;
   std::map<std::pair<Ipv4Address, Ipv4Address>, Time> m_attackers;
   std::vector<Ptr<NetDevice> > m_devices; //!< Devices associated to this node

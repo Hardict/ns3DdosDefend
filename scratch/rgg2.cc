@@ -87,6 +87,11 @@ void printkNodeFlag(NodeContainer nodes) {
 int main(int argc, char *argv[]) {
   Time::SetResolution(Time::NS);
 
+  time_t now = time(0);
+  char *dt = ctime(&now);
+  string stime(dt);
+  while (stime.find(" ") != -1) stime = stime.replace(stime.find(" "), 1, "_");
+
   // LogComponentEnable("MyCode", LOG_LEVEL_INFO);
   // LogComponentEnable ("TcpL4Protocol", LOG_LEVEL_INFO);
   // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
@@ -99,14 +104,12 @@ int main(int argc, char *argv[]) {
   // LogComponentEnable("DefaultSimulatorImpl", LOG_LEVEL_ALL);
 
   uint32_t nAdHocNum = 60;
-  uint32_t nStep = 50;
   uint32_t nNs3Seed = 6;
   uint32_t nSrandSeed = (unsigned)time(nullptr);
   uint32_t nOutFileId = 0;
 
   CommandLine cmd;
   cmd.AddValue("nAdHocNum", "Number of wifi ad devices", nAdHocNum);
-  cmd.AddValue("nStep", "distance between two node", nStep);
   cmd.AddValue("nNs3Seed", "ns3 random seed", nNs3Seed);
   cmd.AddValue("nSrandSeed", "c++ random seed", nSrandSeed);
   cmd.AddValue("nOutFileId", "nOutFileId", nOutFileId);
@@ -134,9 +137,10 @@ int main(int argc, char *argv[]) {
     adhoc_nodes.Get(i)->SetFlagValidTime(Seconds(kUpdateTime * 10.));
     adhoc_nodes.Get(i)->SetSuspiciousValidTime(Seconds(kUpdateTime * 9.));
     adhoc_nodes.Get(i)->SetAttackerValidTime(Seconds(kUpdateTime * 8.));
-    uint32_t tmp = (uint32_t)(kUpdateTime * 8. * kMaxPacketsEverySeconds);
-    adhoc_nodes.Get(i)->SetAttackerThrsh(2);
-    adhoc_nodes.Get(i)->SetAttackerProb(0.125);
+    adhoc_nodes.Get(i)->SetDefendAttackerThrsh(2);
+    adhoc_nodes.Get(i)->SetProbeAttackerThrsh(kClientRate *
+                                              (uint32_t)(kUpdateTime * 10));
+    adhoc_nodes.Get(i)->SetAttackerProb(0.5);
   }
 
   YansWifiChannelHelper channel = YansWifiChannelHelper::Default();
@@ -159,8 +163,8 @@ int main(int argc, char *argv[]) {
   RngSeedManager::SetSeed(nNs3Seed);
   mobility.SetPositionAllocator(
       "ns3::RandomRectanglePositionAllocator", "X",
-      StringValue("ns3::UniformRandomVariable[Min=0|Max=250]"), "Y",
-      StringValue("ns3::UniformRandomVariable[Min=0|Max=250]"));
+      StringValue("ns3::UniformRandomVariable[Min=0|Max=330]"), "Y",
+      StringValue("ns3::UniformRandomVariable[Min=0|Max=330]"));
   mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   // mobility.SetMobilityModel(
   //     "ns3::RandomWalk2dMobilityModel", "Mode", StringValue("Time"), "Time",
@@ -213,7 +217,7 @@ int main(int argc, char *argv[]) {
 
   double send_time = 20;
   double total_time = send_time + 10;
-  uint32_t recvid = 31;
+  uint32_t recvid = 6;
   std::default_random_engine rng(nSrandSeed);
   std::uniform_real_distribution<double> uni(1e-6, 2e-3);
   OnOffHelper onOffAttack(
@@ -251,7 +255,7 @@ int main(int argc, char *argv[]) {
   NodeContainer clients;
   {
     vector<uint32_t> V{34, 48, 33, 13, 56, 10, 1,  22, 44,
-                       5,  6,  7,  15, 16, 17, 51, 52, 53};
+                       5,  31,  7,  15, 16, 17, 51, 52, 53};
     shuffle(V.begin(), V.end(), rng);
     for (auto x : V) {
       clients.Add(adhoc_nodes.Get(x));
@@ -298,10 +302,12 @@ int main(int argc, char *argv[]) {
         DynamicCast<Ipv4FlowClassifier>(flowMonitorHelper.GetClassifier());
     std::stringstream flowmonfile_simple;
     flowmonfile_simple.precision(2);
-    flowmonfile_simple << "./rgg2data/moreNodes20s_"
-                       << std::setiosflags(ios::fixed) << kProbProbeContinue
-                       << "_" << std::setiosflags(ios::fixed)
-                       << kProbDefendContinue << "_" << nOutFileId << ".out";
+
+    // flowmonfile_simple << "./rgg2data/11-24/20s_"
+    //                    << std::setiosflags(ios::fixed) << kProbProbeContinue
+    //                    << "_" << std::setiosflags(ios::fixed)
+    //                    << kProbDefendContinue << "_" << nOutFileId << ".out";
+    flowmonfile_simple << "./rgg2data/11-24/" << stime;
     std::ofstream outfile(flowmonfile_simple.str());
     std::map<Ipv4Address, string> MP;
     std::vector<uint32_t> V;
@@ -310,7 +316,7 @@ int main(int argc, char *argv[]) {
     V.push_back(34), V.push_back(48), V.push_back(33);
     V.push_back(13), V.push_back(56), V.push_back(10);
     V.push_back(1), V.push_back(22), V.push_back(44);
-    V.push_back(5), V.push_back(6), V.push_back(7);
+    V.push_back(5), V.push_back(31), V.push_back(7);
     V.push_back(15), V.push_back(16), V.push_back(17);
     V.push_back(51), V.push_back(52), V.push_back(53);
     uint32_t txcnt = 0, rxcnt = 0;
@@ -331,6 +337,17 @@ int main(int argc, char *argv[]) {
         }
       }
     }
+    outfile << "Number of wifi ad devices " << nAdHocNum << std::endl;
+    outfile << "ns3 random seed " << nNs3Seed << std::endl;
+    outfile << "c++ random seed " << nSrandSeed << std::endl;
+    outfile << "nOutFileId " << nOutFileId << std::endl;
+    outfile << "kProbProbeContinue p% " << kProbProbeContinue << std::endl;
+    outfile << "kProbDefendContinue p% " << kProbDefendContinue << std::endl;
+    outfile << "kProbeTtl " << kProbeTtl << std::endl;
+    outfile << "kDefendTtl " << kDefendTtl << std::endl;
+    outfile << "kPacketSize " << kPacketSize << std::endl;
+    outfile << "kPacketMaxSpeed " << kMaxPacketsEverySeconds << std::endl;
+    outfile << "kUpdateTime " << kUpdateTime << std::endl;
     for (auto x : V) outfile << MP[adhoc_ipv4.GetAddress(x)] << std::endl;
     outfile << "Ip layer total receive/send: " << 100. * rxcnt / txcnt << "%"
             << std::endl;
@@ -396,28 +413,28 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
         node->AddAttacker(item);
         if (node->IsAttacker(item)) {
           std::cout << "=======!!!!!!!=======" << std::endl;
-          std::cout << Names::FindName(node) << ": "
-                    << item.first << ">>>" << item.second << std::endl;
+          std::cout << Names::FindName(node) << ": " << item.first << ">>>"
+                    << item.second << std::endl;
         }
       }
     }
 
-    auto mp = aodv_rtt.GetMap();
-    set<Ipv4Address> tmp;
-    for (auto item : mp) {
-      aodv::RoutingTableEntry rtte = item.second;
-      // Ipv4Address dst = item.first;
-      // NS_LOG_DEBUG("dst: " << dst << ", rtte next hop: " <<
-      // rtte.GetNextHop());
-      Ipv4Address nexthop = rtte.GetNextHop();
-      if (nexthop.IsLocalhost() || nexthop.IsBroadcast() ||
-          nexthop.IsSubnetDirectedBroadcast(Ipv4Mask("255.255.255.0")) ||
-          nexthop == inet_src.GetIpv4())
-        continue;
+    if (org_tag.GetFlagTtl() >= 1) {
+      auto mp = aodv_rtt.GetMap();
+      set<Ipv4Address> tmp;
+      for (auto item : mp) {
+        aodv::RoutingTableEntry rtte = item.second;
+        // Ipv4Address dst = item.first;
+        // NS_LOG_DEBUG("dst: " << dst << ", rtte next hop: " <<
+        // rtte.GetNextHop());
+        Ipv4Address nexthop = rtte.GetNextHop();
+        if (nexthop.IsLocalhost() || nexthop.IsBroadcast() ||
+            nexthop.IsSubnetDirectedBroadcast(Ipv4Mask("255.255.255.0")) ||
+            nexthop == inet_src.GetIpv4())
+          continue;
 
-      // send probe packet to neighbor
-      double rnd = 1. * rand() / RAND_MAX;
-      if (org_tag.GetFlagTtl() >= 1) {
+        // send probe packet to neighbor
+        double rnd = 1. * rand() / RAND_MAX;
         if (org_tag.GetFlag() == Node::kNodeFlag::FLAG_PROBE &&
             rnd > kProbProbeContinue)
           continue;
@@ -431,8 +448,8 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
                           org_tag.GetFlag(), org_tag.GetFlagTtl() - 1,
                           org_tag.GetPid(), org_tag.GetFilterPairs());
       }
+      tmp.clear();
     }
-    tmp.clear();
   } else {
     // normal packet
     NS_LOG_DEBUG("???");
@@ -498,7 +515,7 @@ void ThroughputMonitor(FlowMonitorHelper *flowMonitorHelper,
     std::set<filterPair> S1;
     for (auto item : S) {
       NS_LOG_DEBUG("suspicious path: " << item << " >> " << nodeip);
-      std::cout << Now() << "s, "
+      std::cout << Now() << ", "
                 << "suspicious path: " << item << " >> " << nodeip << std::endl;
       S1.insert(std::make_pair(item, nodeip));
     }

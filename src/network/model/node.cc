@@ -99,7 +99,8 @@ Node::Node()
     m_flag_validtime (Seconds(0.25)),
     m_suspicious_validtime (Seconds(0.2)),
     m_attacker_prob (1.),
-    m_attacker_thrsh (2),
+    m_defend_attacker_thrsh (2),
+    m_probe_attacker_thrsh (2),
     m_attacker_validtime (Seconds(0.2))
 {
   NS_LOG_FUNCTION (this);
@@ -107,14 +108,15 @@ Node::Node()
 }
 
 Node::Node(uint32_t sid, uint32_t flag, Time flagtime,
-           Time sustime,  double prob, uint32_t thrsh, Time attacktime)
+           Time sustime,  double prob, uint32_t defend_thrsh, uint32_t probe_thrsh, Time attacktime)
   : m_id (0),
     m_sid (sid),
     m_flag (flag),
     m_flag_validtime (flagtime),
     m_suspicious_validtime (sustime),
     m_attacker_prob (prob),
-    m_attacker_thrsh (thrsh),
+    m_defend_attacker_thrsh (defend_thrsh),
+    m_probe_attacker_thrsh (probe_thrsh),
     m_attacker_validtime (attacktime)
 { 
   NS_LOG_FUNCTION (this << sid);
@@ -247,14 +249,24 @@ void Node::SetAttackerProb(double prob) {
   m_attacker_prob = prob;
 }
 
-uint32_t Node::GetAttackerThrsh(void) {
+uint32_t Node::GetDefendAttackerThrsh(void) {
   NS_LOG_FUNCTION(this);
-  return m_attacker_thrsh;
+  return m_defend_attacker_thrsh;
 }
 
-void Node::SetAttackerThrsh(uint32_t thrsh) {
+void Node::SetDefendAttackerThrsh(uint32_t thrsh) {
   NS_LOG_FUNCTION(this);
-  m_attacker_thrsh = thrsh;
+  m_defend_attacker_thrsh = thrsh;
+}
+
+uint32_t Node::GetProbeAttackerThrsh(void) {
+  NS_LOG_FUNCTION(this);
+  return m_probe_attacker_thrsh;
+}
+
+void Node::SetProbeAttackerThrsh(uint32_t thrsh) {
+  NS_LOG_FUNCTION(this);
+  m_probe_attacker_thrsh = thrsh;
 }
 
 bool Node::IsAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst) {
@@ -274,15 +286,16 @@ bool Node::AddAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst, Time nowtime
   if (m_suspects.find(src2dst) == m_suspects.end())
     return false;
   if (nowtime == Seconds(0)) nowtime = Now();
+  m_suspects[src2dst].second++;
   if (GetFlag() == kNodeFlag::FLAG_DEFEND) {
-    m_suspects[src2dst].second++;
-    if (m_suspects[src2dst].second >= m_attacker_thrsh){
+    if (m_suspects[src2dst].second >= m_defend_attacker_thrsh){
       m_suspects[src2dst].second = 0;
       m_attackers[src2dst] = nowtime;
       return true;
     }
   } else if (GetFlag() == kNodeFlag::FLAG_PROBE) {
-    if (1.*rand() / RAND_MAX < m_attacker_prob){
+    if (m_suspects[src2dst].second >= m_probe_attacker_thrsh &&
+        1.*rand() / RAND_MAX < m_attacker_prob){
       m_attackers[src2dst] = nowtime;
       return true;
     }
