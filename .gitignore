@@ -16,8 +16,11 @@
 *.routes
 *.tr
 *.flowmon
+*.in
 *.out
+*.xml
 [D|U]l[A-Z][a-z]*Stats.txt
+log_*
 
 \#*#
 ~*
@@ -40,3 +43,5 @@ build/
 /.project
 
 version.cache
+
+rgg2data
