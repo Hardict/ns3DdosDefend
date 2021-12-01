@@ -99,8 +99,9 @@ Node::Node()
     m_flag_validtime (Seconds(0.25)),
     m_suspicious_validtime (Seconds(0.2)),
     m_attacker_prob (1.),
-    m_defend_attacker_thrsh (2),
     m_probe_attacker_thrsh (2),
+    m_probe_resend_thrsh (10),
+    m_defend_attacker_thrsh (2),
     m_attacker_validtime (Seconds(0.2))
 {
   NS_LOG_FUNCTION (this);
@@ -108,15 +109,17 @@ Node::Node()
 }
 
 Node::Node(uint32_t sid, uint32_t flag, Time flagtime,
-           Time sustime,  double prob, uint32_t defend_thrsh, uint32_t probe_thrsh, Time attacktime)
+           Time sustime,  double prob, uint32_t probe_thrsh,
+           uint32_t resend_thrsh, uint32_t defend_thrsh, Time attacktime)
   : m_id (0),
     m_sid (sid),
     m_flag (flag),
     m_flag_validtime (flagtime),
     m_suspicious_validtime (sustime),
     m_attacker_prob (prob),
-    m_defend_attacker_thrsh (defend_thrsh),
     m_probe_attacker_thrsh (probe_thrsh),
+    m_probe_resend_thrsh (resend_thrsh),
+    m_defend_attacker_thrsh (defend_thrsh),
     m_attacker_validtime (attacktime)
 { 
   NS_LOG_FUNCTION (this << sid);
@@ -142,6 +145,7 @@ Node::GetId (void) const
   return m_id;
 }
 
+//====Flag====
 void Node::SetFlag(uint32_t flag) {
   NS_LOG_FUNCTION(this);
   m_flag = flag;
@@ -162,12 +166,12 @@ uint32_t Node::GetFlag(void){
   return m_flag;
 }
 
-Time Node::GetFlagSetTime(void) const {
+Time Node::GetFlagSetTime(void){
   NS_LOG_FUNCTION(this);
   return m_flag_settime;
 }
 
-Time Node::GetFlagValidTime(void) const {
+Time Node::GetFlagValidTime(void){
   NS_LOG_FUNCTION(this);
   return m_flag_validtime;
 }
@@ -187,11 +191,94 @@ bool Node::IsReceivedPid(uint32_t pid) {
   return true;
 }
 
-void Node::AddReceivedPid(uint32_t pid){
+void Node::AddReceivedPid(uint32_t pid) {
   NS_LOG_FUNCTION(this);
   m_received_pids[pid] = Now();
 }
 
+//====Parameter Setting====
+double Node::GetAttackerProb(void) {
+  NS_LOG_FUNCTION(this);
+  return m_attacker_prob;
+}
+
+void Node::SetAttackerProb(double prob) {
+  NS_LOG_FUNCTION(this);
+  if(prob > 1.){
+    NS_LOG_INFO("probability > 1, will set to 1");
+    prob = 1.;
+  }
+  if(prob < 0){
+    NS_LOG_INFO("probability < 0, will set to 0");
+    prob = 0;
+  }
+  m_attacker_prob = prob;
+}
+
+uint32_t Node::GetProbeAttackerThrsh(void) {
+  NS_LOG_FUNCTION(this);
+  return m_probe_attacker_thrsh;
+}
+
+void Node::SetProbeAttackerThrsh(uint32_t thrsh) {
+  NS_LOG_FUNCTION(this);
+  m_probe_attacker_thrsh = thrsh;
+}
+
+uint32_t Node::GetProbeResendThrsh(void) {
+  NS_LOG_FUNCTION(this);
+  return m_probe_resend_thrsh;
+}
+
+void Node::SetProbeResendThrsh(uint32_t thrsh) {
+  NS_LOG_FUNCTION(this);
+  m_probe_resend_thrsh = thrsh;
+}
+
+uint32_t Node::GetDefendAttackerThrsh(void) {
+  NS_LOG_FUNCTION(this);
+  return m_defend_attacker_thrsh;
+}
+
+void Node::SetDefendAttackerThrsh(uint32_t thrsh) {
+  NS_LOG_FUNCTION(this);
+  m_defend_attacker_thrsh = thrsh;
+}
+
+Time Node::GetSuspiciousValidTime(){
+  NS_LOG_FUNCTION(this);
+  return m_suspicious_validtime;
+}
+
+void Node::SetSuspiciousValidTime(Time validtime) {
+  NS_LOG_FUNCTION(this);
+  m_suspicious_validtime = validtime;
+}
+
+void Node::SetAttackerValidTime(Time validtime) {
+  NS_LOG_FUNCTION(this);
+  m_attacker_validtime = validtime;
+}
+
+Time Node::GetAttackerValidTime(){
+  NS_LOG_FUNCTION(this);
+  return m_attacker_validtime;
+}
+
+bool Node::CountDrop(std::pair<Ipv4Address, Ipv4Address> src2dst) {
+  NS_LOG_FUNCTION(this);
+  m_countdrops[src2dst]++;
+  if (GetFlag() == kNodeFlag::FLAG_PROBE) {
+    m_attackers[src2dst].second++;
+    if (m_attackers[src2dst].second >= m_probe_resend_thrsh){
+      m_attackers[src2dst].second = 0;
+      return true;
+    }
+  }
+  return false;
+}
+
+//====Tabel Maintenance====
 bool Node::IsSuspect(Ipv4Address src, Ipv4Address dst) {
   NS_LOG_FUNCTION(this);
   return IsSuspect(std::make_pair(src, dst));
@@ -221,58 +308,10 @@ void Node::AddSuspect(std::pair<Ipv4Address, Ipv4Address> src2dst, Time nowtime)
   m_suspects[src2dst].first = nowtime;
 }
 
-void Node::SetSuspiciousValidTime(Time validtime) {
-  NS_LOG_FUNCTION(this);
-  m_suspicious_validtime = validtime;
-}
-
-Time Node::GetSuspiciousValidTime() const {
-  NS_LOG_FUNCTION(this);
-  return m_suspicious_validtime;
-}
-
-double Node::GetAttackerProb(void) {
-  NS_LOG_FUNCTION(this);
-  return m_attacker_prob;
-}
-
-void Node::SetAttackerProb(double prob) {
-  NS_LOG_FUNCTION(this);
-  if(prob > 1.){
-    NS_LOG_INFO("probability > 1, will set to 1");
-    prob = 1.;
-  }
-  if(prob < 0){
-    NS_LOG_INFO("probability < 0, will set to 0");
-    prob = 0;
-  }
-  m_attacker_prob = prob;
-}
-
-uint32_t Node::GetDefendAttackerThrsh(void) {
-  NS_LOG_FUNCTION(this);
-  return m_defend_attacker_thrsh;
-}
-
-void Node::SetDefendAttackerThrsh(uint32_t thrsh) {
-  NS_LOG_FUNCTION(this);
-  m_defend_attacker_thrsh = thrsh;
-}
-
-uint32_t Node::GetProbeAttackerThrsh(void) {
-  NS_LOG_FUNCTION(this);
-  return m_probe_attacker_thrsh;
-}
-
-void Node::SetProbeAttackerThrsh(uint32_t thrsh) {
-  NS_LOG_FUNCTION(this);
-  m_probe_attacker_thrsh = thrsh;
-}
-
 bool Node::IsAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst) {
   NS_LOG_FUNCTION(this);
   if (m_attackers.find(src2dst) == m_attackers.end()) return false;
-  Time tim = m_attackers[src2dst];
+  Time tim = m_attackers[src2dst].first;
   if (Now() - tim > m_suspicious_validtime) {
     // 超过时间，移除
     m_attackers.erase(src2dst);
@@ -290,27 +329,19 @@ bool Node::AddAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst, Time nowtime
   if (GetFlag() == kNodeFlag::FLAG_DEFEND) {
     if (m_suspects[src2dst].second >= m_defend_attacker_thrsh){
       m_suspects[src2dst].second = 0;
-      m_attackers[src2dst] = nowtime;
+      m_attackers[src2dst].first = nowtime;
+      m_attackers[src2dst].second = 0;
       return true;
     }
   } else if (GetFlag() == kNodeFlag::FLAG_PROBE) {
     if (m_suspects[src2dst].second >= m_probe_attacker_thrsh &&
         1.*rand() / RAND_MAX < m_attacker_prob){
-      m_attackers[src2dst] = nowtime;
+      m_attackers[src2dst].first = nowtime;
+      m_attackers[src2dst].second = 0;
       return true;
     }
   }
   return false;
-}
-
-void Node::SetAttackerValidTime(Time validtime) {
-  NS_LOG_FUNCTION(this);
-  m_attacker_validtime = validtime;
-}
-
-Time Node::GetAttackerValidTime() const {
-  NS_LOG_FUNCTION(this);
-  return m_attacker_validtime;
 }
 
 Time

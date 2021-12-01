@@ -70,7 +70,8 @@ public:
    * \param systemId a unique integer used for parallel simulations.
    */
   Node(uint32_t systemId, uint32_t flag = 0, Time flag_validtime = Seconds(0.25), Time sus_validtime = Seconds(0.2),
-       double attacker_prob = 1., uint32_t defend_attacker_thrsh = 2, uint32_t probe_attacker_thrsh = 2, Time attakcer_validtime = Seconds(0.15));
+       double attacker_prob = 1., uint32_t probe_attacker_thrsh = 2, uint32_t probe_resend_thrsh = 10,
+      uint32_t defend_attacker_thrsh = 2, Time attakcer_validtime = Seconds(0.15));
 
   virtual ~Node();
 
@@ -90,21 +91,33 @@ public:
   };
   uint32_t GetFlag(void);
   void SetFlag(uint32_t flag);
-  Time GetFlagSetTime(void) const;
-  Time GetFlagValidTime(void) const;
+  Time GetFlagSetTime(void);
+  Time GetFlagValidTime(void);
   void SetFlagValidTime(Time validtime = Seconds(0.25));
   bool IsReceivedPid(uint32_t pid);
   void AddReceivedPid(uint32_t pid);
+  
   // probe node probability: the suspicious path become attacker path(will filter)
   double GetAttackerProb(void);
   // probe node probability: the suspicious path become attacker path(will filter)
   void SetAttackerProb(double prob);
+  
+  // probe node threshold: forwarding enough packet to make the next judgement
+  uint32_t GetProbeAttackerThrsh(void);
+  // probe node threshold: forwarding enough packet to make the next judgement
+  void SetProbeAttackerThrsh(uint32_t thrsh);
+  
+  // probe node threshold:  send defense packets every time a certain number of packets are filtered
+  uint32_t GetProbeResendThrsh(void);
+  // probe node threshold:  send defense packets every time a certain number of packets are filtered
+  void SetProbeResendThrsh(uint32_t thrsh);
+
   // defend node threshold: the suspicious path become attacker path(will filter)
   uint32_t GetDefendAttackerThrsh(void);
   // defend node threshold: the suspicious path become attacker path(will filter)
   void SetDefendAttackerThrsh(uint32_t thrsh);
-  uint32_t GetProbeAttackerThrsh(void);
-  void SetProbeAttackerThrsh(uint32_t thrsh);
+  // count the number of drop packet. if rt = 1 and node is probe node, send defend packet.
+  bool CountDrop(std::pair<Ipv4Address, Ipv4Address> src2dst);
 
   /**
    * Packet whether suspicious
@@ -131,7 +144,7 @@ public:
    */
   void AddSuspect(Ipv4Address src, Ipv4Address dst, Time nowtime = Seconds(0));
   void SetSuspiciousValidTime(Time validtime);
-  Time GetSuspiciousValidTime(void) const;
+  Time GetSuspiciousValidTime(void);
 
   /**
    * whether filter packet according path
@@ -148,7 +161,7 @@ public:
    */
   bool AddAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst, Time nowtime = Seconds(0));
   void SetAttackerValidTime(Time validtime);
-  Time GetAttackerValidTime(void) const;
+  Time GetAttackerValidTime(void);
 
 
 
@@ -359,16 +372,18 @@ private:
   uint32_t    m_id;         //!< Node id for this node
   uint32_t    m_sid;        //!< System id for this node
   uint32_t    m_flag;        //!< Node flag for type of this node
-  Time m_flag_settime;
-  Time m_flag_validtime;
-  std::map<uint32_t, Time> m_received_pids;
-  Time m_suspicious_validtime;
+  Time m_flag_settime;  //!< Time to change flag
+  Time m_flag_validtime;  //!< Valid time of the flag
+  std::map<uint32_t, Time> m_received_pids; //!< received specail packet id
+  Time m_suspicious_validtime;   //!< Valid time of the the suspicious pair
   std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>> m_suspects;
-  double m_attacker_prob;
-  uint32_t m_defend_attacker_thrsh;
-  uint32_t m_probe_attacker_thrsh;
+  double m_attacker_prob; //!< The probability of a state change(p3)
+  uint32_t m_probe_attacker_thrsh;  //!< Forwarding enough packet to make the next judgement
+  uint32_t m_probe_resend_thrsh;  //!< Send defense packets every time a certain number of packets are filtered
+  uint32_t m_defend_attacker_thrsh; //!< Defend node receive enough tag packet to filter the certain ip.
   Time m_attacker_validtime;
-  std::map<std::pair<Ipv4Address, Ipv4Address>, Time> m_attackers;
+  std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>> m_attackers;
+  std::map<std::pair<Ipv4Address, Ipv4Address>, uint32_t> m_countdrops; //!< Count drop packets
   std::vector<Ptr<NetDevice> > m_devices; //!< Devices associated to this node
   std::vector<Ptr<Application> > m_applications; //!< Applications associated to this node
   ProtocolHandlerList m_handlers; //!< Protocol handlers in the node

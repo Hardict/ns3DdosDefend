@@ -506,6 +506,8 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
     }
     if (node->IsAttacker(src2dst)){
       NS_LOG_INFO("Drop the packet because of the pair(src,dst) is attack path.");
+      if (node->CountDrop(src2dst))
+        m_sendDefendPacket(node, src2dst);
       return true;
     }
   }
