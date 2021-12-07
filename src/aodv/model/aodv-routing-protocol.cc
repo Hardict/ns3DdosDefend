@@ -505,7 +505,7 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
         m_sendDefendPacket(node, src2dst);
     }
     if (node->IsAttacker(src2dst)){
-      NS_LOG_INFO("Drop the packet because of the pair(src,dst) is attack path.");
+      NS_LOG_INFO("Drop the packet in that the pair(src,dst) is attack path.");
       if (node->CountDrop(src2dst))
         m_sendDefendPacket(node, src2dst);
       return true;
@@ -1345,7 +1345,21 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
 
   NS_LOG_LOGIC (receiver << " receive RREQ with hop count " << static_cast<uint32_t> (rreqHeader.GetHopCount ())
                          << " ID " << rreqHeader.GetId ()
-                         << " to destination " << rreqHeader.GetDst ());
+                         << " to destination " << rreqHeader.GetDst ()
+                         << " with origin " << origin);
+
+  auto node = m_socketAddresses.begin()->first->GetNode();
+  NS_LOG_DEBUG("Node name: " << Names::FindName(node));
+  if (node->GetFlag() != Node::kNodeFlag::FLAG_NORMAL){
+    Ipv4Address origin = rreqHeader.GetOrigin();
+    Ipv4Address dst = rreqHeader.GetDst();
+    NS_LOG_DEBUG("origin: " << origin << " dst: " << dst);
+    std::pair<Ipv4Address, Ipv4Address> src2dst = std::make_pair(origin, dst);
+    if (node->IsAttacker(src2dst)){
+      NS_LOG_DEBUG("Drop RREQ packet in that node filter");
+      return;
+    }
+  }
 
   //  A node generates a RREP if either:
   //  (i)  it is itself the destination,
@@ -1603,6 +1617,20 @@ RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sen
       rrepHeader.SetAckRequired (false);
     }
   NS_LOG_LOGIC ("receiver " << receiver << " origin " << rrepHeader.GetOrigin ());
+
+  auto node = m_socketAddresses.begin()->first->GetNode();
+  NS_LOG_DEBUG("Node name: " << Names::FindName(node));
+  if (node->GetFlag() != Node::kNodeFlag::FLAG_NORMAL){
+    Ipv4Address origin = rrepHeader.GetOrigin();
+    Ipv4Address dst = rrepHeader.GetDst();
+    NS_LOG_DEBUG("origin: " << origin << " dst: " << dst);
+    std::pair<Ipv4Address, Ipv4Address> src2dst = std::make_pair(origin, dst);
+    if (node->IsAttacker(src2dst)){
+      NS_LOG_DEBUG("Drop RREP packet in that node filter");
+      return;
+    }
+  }
+
   if (IsMyOwnAddress (rrepHeader.GetOrigin ()))
     {
       if (toDst.GetFlag () == IN_SEARCH)

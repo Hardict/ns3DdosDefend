@@ -99,7 +99,7 @@ Node::Node()
     m_flag_validtime (Seconds(0.25)),
     m_suspicious_validtime (Seconds(0.2)),
     m_attacker_prob (1.),
-    m_probe_attacker_thrsh (2),
+    m_probe_attacker_thrsh (1),
     m_probe_resend_thrsh (10),
     m_defend_attacker_thrsh (2),
     m_attacker_validtime (Seconds(0.2))
@@ -160,6 +160,7 @@ uint32_t Node::GetFlag(void){
     SetFlag(kNodeFlag::FLAG_NORMAL);
     std::map<uint32_t, Time>().swap(m_received_pids);
     // m_received_pids.clear();
+    m_received_defendinfos.clear();
     m_suspects.clear();
     m_attackers.clear();
   }
@@ -194,6 +195,19 @@ bool Node::IsReceivedPid(uint32_t pid) {
 void Node::AddReceivedPid(uint32_t pid) {
   NS_LOG_FUNCTION(this);
   m_received_pids[pid] = Now();
+}
+
+bool Node::IsReceivedDefendInfo(uint32_t nodeid, std::pair<Ipv4Address, Ipv4Address> src2dst) {
+  NS_LOG_FUNCTION(this);
+  auto pir = std::make_pair(nodeid, src2dst);
+  if (m_received_defendinfos.find(pir) == m_received_defendinfos.end()) return false;
+  return true;
+}
+
+void Node::AddReceivedDefendInfo(uint32_t nodeid, std::pair<Ipv4Address, Ipv4Address> src2dst) {
+  NS_LOG_FUNCTION(this);
+  auto pir = std::make_pair(nodeid, src2dst);
+  m_received_defendinfos.insert(pir);
 }
 
 //====Parameter Setting====
@@ -315,6 +329,9 @@ bool Node::IsAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst) {
   if (Now() - tim > m_suspicious_validtime) {
     // 超过时间，移除
     m_attackers.erase(src2dst);
+    for (auto item: m_received_defendinfos)
+      if (item.second == src2dst)
+        m_received_defendinfos.erase(item);
     return false;
   }
   return true;

@@ -43,7 +43,7 @@ uint32_t kProbeTtl = 3;
 uint32_t kDefendTtl = 3;
 uint32_t kPacketSize = 1 << 6;
 uint32_t kMaxPacketsEverySeconds = 50;  // 每秒至多发x个包
-// 每1s更新一次
+// 每xs更新一次
 double kUpdateTime = 0.5;
 uint32_t kAttackerRate = kMaxPacketsEverySeconds;
 uint32_t kClientRate = 2;
@@ -62,6 +62,8 @@ class MyTag : public Tag {
   uint32_t GetFlag(void) const;
   void SetFlagTtl(uint32_t ttl);
   uint32_t GetFlagTtl(void) const;
+  void SetSendnid(uint32_t nid);
+  uint32_t GetSendnid(void) const;
   void SetPid(uint32_t pid);
   uint32_t GetPid(void) const;
   void SetFilterPairs(std::set<filterPair> filterpairs);
@@ -70,7 +72,8 @@ class MyTag : public Tag {
  private:
   uint32_t m_flag;
   uint32_t m_ttl;
-  uint32_t m_pid;
+  uint32_t m_sendnid;  //信息源结点ids
+  uint32_t m_pid;      //包id
   std::set<filterPair> m_filterpairs;
 };
 std::ostream &operator<<(std::ostream &os, MyTag const &mytag) {
@@ -88,7 +91,7 @@ void RecvSpecailCallback(Ptr<Socket> sock);
 // 绑定在Aodv协议中对CallBack，用于同步(激活)防御包发送
 void AodvSendDependPacket(Ptr<Node> node, filterPair src2dst);
 void SendSpecialPacket(Ptr<Socket> sock, InetSocketAddress dst, uint32_t flag,
-                       uint32_t ttl, uint32_t pid,
+                       uint32_t ttl, uint32_t nid, uint32_t pid,
                        std::set<filterPair> filterpairs);
 // 对特定ip进行流量监测
 void ThroughputMonitor(FlowMonitorHelper *flowMonitorHelper,
@@ -181,7 +184,7 @@ int main(int argc, char *argv[]) {
   mobility.Install(adhoc_nodes);
 
   AodvHelper aodv;
-  aodv.Set("HelloInterval", TimeValue(Seconds(999.)));
+  // aodv.Set("HelloInterval", TimeValue(Seconds(999.)));
   Ipv4StaticRoutingHelper static_routing;
   Ipv4ListRoutingHelper list;
   list.Add(static_routing, 0);
@@ -229,7 +232,7 @@ int main(int argc, char *argv[]) {
     MPid2colortype[i] = 0;  // default color
   }
 
-  double send_time = 60;
+  double send_time = 20;
   double total_time = send_time + 10;
   uint32_t recvid = 6;
   std::default_random_engine rng(nSrandSeed);
@@ -247,7 +250,7 @@ int main(int argc, char *argv[]) {
 
   NodeContainer attackers;
   {
-    vector<uint32_t> V{4, 35, 20, 0, 40, 24};
+    vector<uint32_t> V{64, 35, 83, 0, 62, 24};
     shuffle(V.begin(), V.end(), rng);
     for (auto x : V) {
       attackers.Add(adhoc_nodes.Get(x));
@@ -299,7 +302,8 @@ int main(int argc, char *argv[]) {
   recvsocket->Bind(InetSocketAddress(Ipv4Address::GetAny(), normalport));
   double recv_interval = 0.1;
   recvsocket->SetAttribute(
-      "RcvBufSize", UintegerValue(kPacketSize * kMaxPacketsEverySeconds * recv_interval));
+      "RcvBufSize",
+      UintegerValue(kPacketSize * kMaxPacketsEverySeconds * recv_interval));
   // 间隔接受Buffer中数据，以Buffer满模拟服务器处理达到上界以此模拟服务器处理能力
   Simulator::Schedule(Seconds(1e-9), &RecvNormal, recvsocket, recv_interval);
 
@@ -332,7 +336,7 @@ int main(int argc, char *argv[]) {
     flowmonfile_simple.precision(2);
 
     stime.pop_back();
-    flowmonfile_simple << "./rgg2data/12-1/test_" << stime << ".out";
+    flowmonfile_simple << "./rgg2data/oneturn/test_" << stime << ".out";
     std::ofstream outfile(flowmonfile_simple.str());
     std::map<Ipv4Address, string> MP;
     std::vector<uint32_t> V;
@@ -414,17 +418,20 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
   Ptr<Packet> packet = sock->RecvFrom(org_src);
   InetSocketAddress inet_src = InetSocketAddress::ConvertFrom(org_src);
 
-  MyTag org_tag;
-  packet->PeekPacketTag(org_tag);
+  MyTag probetag;
+  packet->PeekPacketTag(probetag);
 
   NS_LOG_DEBUG("node name: " << Names::FindName(sock->GetNode()));
   NS_LOG_DEBUG("received a special packet from " << inet_src.GetIpv4() << " "
                                                  << inet_src.GetPort());
-  NS_LOG_DEBUG(org_tag);
+  NS_LOG_DEBUG(probetag);
 
   Ptr<Node> node = sock->GetNode();
-  if (node->IsReceivedPid(org_tag.GetPid())) return;
-  node->AddReceivedPid(org_tag.GetPid());
+  if (node->IsReceivedPid(probetag.GetPid())) return;
+  node->AddReceivedPid(probetag.GetPid());
+  // std::cout << Names::FindName(node) << " Pid: " << probetag.GetPid() <<
+  // std::endl;
+
   Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
   Ipv4Address nodeip = ipv4->GetAddress(1, 0).GetLocal();
 
@@ -435,19 +442,27 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
   aodv::RoutingTable aodv_rtt = aodv_rtp->GetRoutingTable();
   std::default_random_engine rng(rand());
   std::uniform_real_distribution<double> uni(1e-6, 2e-3);
-  if (org_tag.GetFlag() != Node::kNodeFlag::FLAG_NORMAL) {
+  if (probetag.GetFlag() != Node::kNodeFlag::FLAG_NORMAL) {
     if (node->GetFlag() == Node::kNodeFlag::FLAG_NORMAL) {
-      node->SetFlag(org_tag.GetFlag());
+      node->SetFlag(probetag.GetFlag());
       if (MPid2colortype[node->GetId()] == 0) {
-        uint32_t cid = org_tag.GetFlag();
+        uint32_t cid = probetag.GetFlag();
         pAnim->UpdateNodeColor(node, kColors[cid].r, kColors[cid].g,
                                kColors[cid].b);
       }
     }
-    for (auto item : org_tag.GetFilterPairs()) {
+    for (auto item : probetag.GetFilterPairs()) {
       node->AddSuspect(item);
-      if (node->GetFlag() == Node::kNodeFlag::FLAG_DEFEND) {
+      // 1.防御节点 2.收到防御包 3.该路径未被过滤 4.是一个不同对探测节点发送对信息
+      if (node->GetFlag() == Node::kNodeFlag::FLAG_DEFEND &&
+          probetag.GetFlag() == Node::kNodeFlag::FLAG_DEFEND &&
+          (!node->IsAttacker(item)) &&
+          (!node->IsReceivedDefendInfo(probetag.GetSendnid(), item))) {
         node->AddAttacker(item);
+        node->AddReceivedDefendInfo(probetag.GetSendnid(), item);
+        // std::cout << "receive defend packet" << std::endl;
+        // std::cout << Names::FindName(node) << ": " << item.first << ">>>"
+        //           << item.second << std::endl;
         if (node->IsAttacker(item)) {
           std::cout << "=======!!!!!!!=======" << std::endl;
           std::cout << Names::FindName(node) << ": " << item.first << ">>>"
@@ -456,7 +471,7 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
       }
     }
 
-    if (org_tag.GetFlagTtl() >= 1) {
+    if (probetag.GetFlagTtl() >= 1) {
       auto mp = aodv_rtt.GetMap();
       set<Ipv4Address> tmp;
       for (auto item : mp) {
@@ -469,21 +484,24 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
             nexthop.IsSubnetDirectedBroadcast(Ipv4Mask("255.255.255.0")) ||
             nexthop == inet_src.GetIpv4())
           continue;
+        filterPair pir = std::make_pair(nodeip, nexthop);
+        if (node->IsAttacker(pir)) continue;
 
         // send probe packet to neighbor
         double rnd = 1. * rand() / RAND_MAX;
-        if (org_tag.GetFlag() == Node::kNodeFlag::FLAG_PROBE &&
+        if (probetag.GetFlag() == Node::kNodeFlag::FLAG_PROBE &&
             rnd > kProbProbeContinue)
           continue;
-        if (org_tag.GetFlag() == Node::kNodeFlag::FLAG_DEFEND &&
+        if (probetag.GetFlag() == Node::kNodeFlag::FLAG_DEFEND &&
             rnd > kProbDefendContinue)
           continue;
         if (tmp.find(nexthop) != tmp.end()) continue;
         tmp.insert(nexthop);
         NS_LOG_DEBUG(Now() << " forward packet to " << nexthop);
         SendSpecialPacket(sock, InetSocketAddress(nexthop, kProbePort),
-                          org_tag.GetFlag(), org_tag.GetFlagTtl() - 1,
-                          org_tag.GetPid(), org_tag.GetFilterPairs());
+                          probetag.GetFlag(), probetag.GetFlagTtl() - 1,
+                          probetag.GetSendnid(), probetag.GetPid(),
+                          probetag.GetFilterPairs());
       }
       tmp.clear();
     }
@@ -494,23 +512,27 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
 }
 
 void AodvSendDependPacket(Ptr<Node> node, filterPair src2dst) {
+  std::cout << Names::FindName(node) << ": send depend packet" << std::endl;
+  std::cout << src2dst.first << ">>>" << src2dst.second << std::endl;
   Ptr<Socket> sock =
       Socket::CreateSocket(node, TypeId::LookupByName("ns3::UdpSocketFactory"));
   Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
   Ipv4Address nodeip = ipv4->GetAddress(1, 0).GetLocal();
   std::set<filterPair> S{src2dst};
   SendSpecialPacket(sock, InetSocketAddress(nodeip, kProbePort),
-                    Node::kNodeFlag::FLAG_DEFEND, kDefendTtl, rand(), S);
+                    Node::kNodeFlag::FLAG_DEFEND, kDefendTtl, node->GetId(),
+                    rand(), S);
 }
 
 void SendSpecialPacket(Ptr<Socket> sock, InetSocketAddress dst, uint32_t flag,
-                       uint32_t ttl, uint32_t pid,
+                       uint32_t ttl, uint32_t nid, uint32_t pid,
                        std::set<filterPair> filterpairs) {
   Ptr<Packet> p = Create<Packet>();
   // create a tag.
   MyTag tag;
   tag.SetFlag(flag);
   tag.SetFlagTtl(ttl);
+  tag.SetSendnid(nid);
   tag.SetPid(pid);
   tag.SetFilterPairs(filterpairs);
   p->AddPacketTag(tag);
@@ -540,15 +562,17 @@ void ThroughputMonitor(FlowMonitorHelper *flowMonitorHelper,
         tmp.destinationPort != aodv::RoutingProtocol::AODV_PORT &&
         tmp.sourceAddress != nodeip) {
       // 流量监测
-      uint32_t delta = item.second.rxPackets - rxMP[item.first];
-      num += delta;
+      uint32_t delta = item.second.rxBytes - rxMP[item.first];
+      if (delta >= 64){
+        num += delta;
+        S.insert(tmp.sourceAddress);
+      } 
       // NS_LOG_DEBUG(tmp.destinationAddress);
       // NS_LOG_DEBUG(item.second.rxPackets << " " <<rxMP[item.first]);
-      if (delta) S.insert(tmp.sourceAddress);
-      rxMP[item.first] = item.second.rxPackets;
+      rxMP[item.first] = item.second.rxBytes;
     }
   }
-  if (num > (uint32_t)(kUpdateTime * kMaxPacketsEverySeconds)) {
+  if (num > (uint32_t)(kUpdateTime * kMaxPacketsEverySeconds * kPacketSize)) {
     std::set<filterPair> S1;
     for (auto item : S) {
       NS_LOG_DEBUG("suspicious path: " << item << " >> " << nodeip);
@@ -556,10 +580,12 @@ void ThroughputMonitor(FlowMonitorHelper *flowMonitorHelper,
                 << "suspicious path: " << item << " >> " << nodeip << std::endl;
       S1.insert(std::make_pair(item, nodeip));
     }
-    Simulator::ScheduleNow(SendSpecialPacket, sock,
-                           InetSocketAddress(nodeip, kProbePort),
-                           Node::kNodeFlag::FLAG_PROBE, kProbeTtl + 1, rand(),
-                           S1);  // 因为向自己发包故+1
+    // Simulator::ScheduleNow(&SendSpecialPacket, sock,
+    //                        InetSocketAddress(nodeip, kProbePort),
+    //                        Node::kNodeFlag::FLAG_PROBE, kProbeTtl + 1, 1,
+    //                        rand(), S1);  // 因为向自己发包故+1
+    SendSpecialPacket(sock, InetSocketAddress(nodeip, kProbePort), Node::kNodeFlag::FLAG_PROBE,
+                      kProbeTtl + 1, sock->GetNode()->GetId(), rand(), S1);
   }
   Simulator::Schedule(Seconds(kUpdateTime), &ThroughputMonitor,
                       flowMonitorHelper, flowMonitor, sock, rxMP);
@@ -595,12 +621,14 @@ TypeId MyTag::GetTypeId(void) {
 }
 TypeId MyTag::GetInstanceTypeId(void) const { return GetTypeId(); }
 uint32_t MyTag::GetSerializedSize(void) const {
-  return sizeof(uint32_t) * 2 +
+  return sizeof(uint32_t) * 4 +
          sizeof(uint32_t) * (2 * m_filterpairs.size() + 1);
 }
 void MyTag::Serialize(TagBuffer buffer) const {
   buffer.WriteU32(m_flag);
   buffer.WriteU32(m_ttl);
+  buffer.WriteU32(m_sendnid);
+  buffer.WriteU32(m_pid);
   uint32_t num = m_filterpairs.size();
   buffer.WriteU32(num);
   uint32_t ip;
@@ -617,6 +645,8 @@ void MyTag::Serialize(TagBuffer buffer) const {
 void MyTag::Deserialize(TagBuffer buffer) {
   m_flag = buffer.ReadU32();
   m_ttl = buffer.ReadU32();
+  m_sendnid = buffer.ReadU32();
+  m_pid = buffer.ReadU32();
   uint32_t num = buffer.ReadU32();
   m_filterpairs.clear();
   uint32_t ip;
@@ -641,6 +671,8 @@ void MyTag::SetFlag(uint32_t value) { m_flag = value; }
 uint32_t MyTag::GetFlag(void) const { return m_flag; }
 void MyTag::SetFlagTtl(uint32_t ttl) { m_ttl = ttl; }
 uint32_t MyTag::GetFlagTtl(void) const { return m_ttl; }
+void MyTag::SetSendnid(uint32_t nid) { m_sendnid = nid; }
+uint32_t MyTag::GetSendnid(void) const { return m_sendnid; }
 void MyTag::SetPid(uint32_t pid) { m_pid = pid; }
 uint32_t MyTag::GetPid(void) const { return m_pid; }
 void MyTag::SetFilterPairs(std::set<filterPair> pirs) { m_filterpairs = pirs; }

@@ -70,7 +70,7 @@ public:
    * \param systemId a unique integer used for parallel simulations.
    */
   Node(uint32_t systemId, uint32_t flag = 0, Time flag_validtime = Seconds(0.25), Time sus_validtime = Seconds(0.2),
-       double attacker_prob = 1., uint32_t probe_attacker_thrsh = 2, uint32_t probe_resend_thrsh = 10,
+       double attacker_prob = 1., uint32_t probe_attacker_thrsh = 1, uint32_t probe_resend_thrsh = 10,
       uint32_t defend_attacker_thrsh = 2, Time attakcer_validtime = Seconds(0.15));
 
   virtual ~Node();
@@ -96,6 +96,8 @@ public:
   void SetFlagValidTime(Time validtime = Seconds(0.25));
   bool IsReceivedPid(uint32_t pid);
   void AddReceivedPid(uint32_t pid);
+  bool IsReceivedDefendInfo(uint32_t nodeid, std::pair<Ipv4Address, Ipv4Address> src2dst);
+  void AddReceivedDefendInfo(uint32_t nodeid, std::pair<Ipv4Address, Ipv4Address> src2dst);
   
   // probe node probability: the suspicious path become attacker path(will filter)
   double GetAttackerProb(void);
@@ -375,6 +377,7 @@ private:
   Time m_flag_settime;  //!< Time to change flag
   Time m_flag_validtime;  //!< Valid time of the flag
   std::map<uint32_t, Time> m_received_pids; //!< received specail packet id
+  std::set<std::pair<uint32_t, std::pair<Ipv4Address, Ipv4Address>>> m_received_defendinfos;
   Time m_suspicious_validtime;   //!< Valid time of the the suspicious pair
   std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>> m_suspects;
   double m_attacker_prob; //!< The probability of a state change(p3)
