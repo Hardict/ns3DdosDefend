@@ -29,8 +29,10 @@ struct rgb kColors[] = {
     {0, 0, 0xff},     // Blue-probe
     {0xff, 0xff, 0},  // Yellow-defend
     {0xff, 0, 0xff},  // Purple-server
-    {0xff, 0x99, 0},  // Orange-client
-    {0, 0, 0}         // Black-attacker
+    {0, 0xff, 0},     // Green-client
+    {0, 0xff, 0xff},        // client-probe
+    {0x6e, 0x97, 0x49},        // client-defend
+    {0, 0, 0},        // Black-attacker
 };
 
 double kProbProbeContinue = 50;  // %
@@ -42,11 +44,14 @@ uint32_t kProbePort = 2333;
 uint32_t kProbeTtl = 3;
 uint32_t kDefendTtl = 3;
 uint32_t kPacketSize = 1 << 6;
-uint32_t kMaxPacketsEverySeconds = 50;  // 每秒至多发x个包
+uint32_t kServerRate = 50;  // 每秒至收发x个包
 // 每xs更新一次
 double kUpdateTime = 0.5;
-uint32_t kAttackerRate = kMaxPacketsEverySeconds;
+uint32_t kAttackerRate = kServerRate;
 uint32_t kClientRate = 2;
+uint32_t kAcceptPacket;
+uint32_t kAcceptCnt;
+Time kAcceptTimeFlag;
 using filterPair =
     std::pair<Ipv4Address, Ipv4Address>;  // suspicious path: Attacker>>Victim
 class MyTag : public Tag {
@@ -83,13 +88,14 @@ std::ostream &operator<<(std::ostream &os, MyTag const &mytag) {
 
 AnimationInterface *pAnim = 0;
 std::set<Ipv4Address> Sclientip;
+std::map<Ipv4Address, uint32_t> MPclientcnt;
 uint32_t cnt_recvnormalpacket;
 // 模拟服务器接受，每隔一段时间(1s)统一接受，利用套接字缓冲队列溢出模拟服务器处理能力
 void RecvNormal(Ptr<Socket> sock, double interval);
 // 收到特殊包并转发
 void RecvSpecailCallback(Ptr<Socket> sock);
 // 绑定在Aodv协议中对CallBack，用于同步(激活)防御包发送
-void AodvSendDependPacket(Ptr<Node> node, filterPair src2dst);
+void AodvSendDefendPacket(Ptr<Node> node, filterPair src2dst);
 void SendSpecialPacket(Ptr<Socket> sock, InetSocketAddress dst, uint32_t flag,
                        uint32_t ttl, uint32_t nid, uint32_t pid,
                        std::set<filterPair> filterpairs);
@@ -102,15 +108,22 @@ std::map<uint32_t, uint32_t> MPid2colortype;
 void UpdateNodeColor(NodeContainer nodes,
                      std::map<uint32_t, uint32_t> MPid2colortype,
                      double interval);
+void OutputVal(std::ofstream);
 
 int main(int argc, char *argv[]) {
   Time::SetResolution(Time::NS);
+  // LogComponentEnable("MyCode", LOG_LEVEL_ALL);
+  // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
+  // LogComponentEnable("OnOffApplication", LOG_LEVEL_ALL);
+  // LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_ALL);
+  // NS_LOG_DEBUG("Test LOG");
 
   time_t now = time(0);
   char *dt = ctime(&now);
   string stime(dt);
   while (stime.find(" ") != -1) stime = stime.replace(stime.find(" "), 1, "_");
   while (stime.find(":") != -1) stime = stime.replace(stime.find(":"), 1, "_");
+  stime.pop_back();
 
   uint32_t nAdHocNum = 60;
   uint32_t nNs3Seed = 6;
@@ -129,7 +142,8 @@ int main(int argc, char *argv[]) {
   cmd.AddValue("kProbeTtl", "kProbeTtl", kProbeTtl);
   cmd.AddValue("kDefendTtl", "kDefendTtl", kDefendTtl);
   cmd.AddValue("kPacketSize", "kPacketSize", kPacketSize);
-  cmd.AddValue("kPacketMaxSpeed", "kPacketMaxSpeed", kMaxPacketsEverySeconds);
+  cmd.AddValue("kServerRate", "kServerRate", kServerRate);
+  cmd.AddValue("kAttackerRate", "kAttackerRate", kAttackerRate);
   cmd.AddValue("kUpdateTime", "kUpdateTime", kUpdateTime);
   cmd.Parse(argc, argv);
   kProbProbeContinue /= 100.;
@@ -143,25 +157,26 @@ int main(int argc, char *argv[]) {
     std::ostringstream os;
     os << "node-" << i;
     Names::Add(os.str(), adhoc_nodes.Get(i));
-    adhoc_nodes.Get(i)->SetFlagValidTime(Seconds(kUpdateTime * 20.));
-    adhoc_nodes.Get(i)->SetSuspiciousValidTime(Seconds(kUpdateTime * 19.));
-    adhoc_nodes.Get(i)->SetAttackerValidTime(Seconds(kUpdateTime * 18.));
-    adhoc_nodes.Get(i)->SetProbeResendThrsh(8);
+    adhoc_nodes.Get(i)->SetFlagValidTime(Seconds(kUpdateTime * 40.));
+    adhoc_nodes.Get(i)->SetSuspiciousValidTime(Seconds(kUpdateTime * 39.));
+    adhoc_nodes.Get(i)->SetAttackerValidTime(Seconds(kUpdateTime * 38.));
+    adhoc_nodes.Get(i)->SetProbeResendThrsh(10);
     adhoc_nodes.Get(i)->SetDefendAttackerThrsh(2);
     adhoc_nodes.Get(i)->SetProbeAttackerThrsh(kClientRate *
-                                              (uint32_t)(kUpdateTime * 10));
+                                              (uint32_t)(kUpdateTime * 20));
     adhoc_nodes.Get(i)->SetAttackerProb(0.5);
   }
 
   YansWifiChannelHelper channel = YansWifiChannelHelper::Default();
   YansWifiPhyHelper phy;
-  phy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
+  // phy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
   phy.SetChannel(channel.Create());
 
   WifiHelper wifi;
-  // wifi.SetStandard(WIFI_PHY_STANDARD_80211a); //设置标准
-  wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode",
-                               StringValue("OfdmRate6Mbps"));
+  wifi.SetStandard(WIFI_STANDARD_80211a); //设置标准
+  wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager",
+                                "DataMode", StringValue("OfdmRate6Mbps"),
+                                "RtsCtsThreshold", UintegerValue (0));
 
   WifiMacHelper mac;
   mac.SetType("ns3::AdhocWifiMac");
@@ -173,8 +188,8 @@ int main(int argc, char *argv[]) {
   RngSeedManager::SetSeed(nNs3Seed);
   mobility.SetPositionAllocator(
       "ns3::RandomRectanglePositionAllocator", "X",
-      StringValue("ns3::UniformRandomVariable[Min=0|Max=330]"), "Y",
-      StringValue("ns3::UniformRandomVariable[Min=0|Max=330]"));
+      StringValue("ns3::UniformRandomVariable[Min=0|Max=500]"), "Y",
+      StringValue("ns3::UniformRandomVariable[Min=0|Max=500]"));
   mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   // mobility.SetMobilityModel(
   //     "ns3::RandomWalk2dMobilityModel", "Mode", StringValue("Time"), "Time",
@@ -185,6 +200,8 @@ int main(int argc, char *argv[]) {
 
   AodvHelper aodv;
   // aodv.Set("HelloInterval", TimeValue(Seconds(999.)));
+  // aodv.Set("ActiveRouteTimeout", TimeValue(Seconds(0.5)));
+  // aodv.Set("DeletePeriod", TimeValue(Seconds(1)));
   Ipv4StaticRoutingHelper static_routing;
   Ipv4ListRoutingHelper list;
   list.Add(static_routing, 0);
@@ -199,7 +216,7 @@ int main(int argc, char *argv[]) {
     Ptr<Ipv4RoutingProtocol> iprtp = ipl3p->GetRoutingProtocol();
     Ptr<aodv::RoutingProtocol> aodv_rtp =
         AodvHelper::GetRouting<aodv::RoutingProtocol>(iprtp);
-    aodv_rtp->SetDefendCallback(MakeCallback(&AodvSendDependPacket));
+    aodv_rtp->SetDefendCallback(MakeCallback(&AodvSendDefendPacket));
   }
 
   Ipv4AddressHelper address;
@@ -208,11 +225,11 @@ int main(int argc, char *argv[]) {
   Ipv4InterfaceContainer adhoc_ipv4;
   adhoc_ipv4 = address.Assign(adhoc_devices);
 
-  pAnim = new AnimationInterface("test.xml");
-  pAnim->SetStartTime(Seconds(1));
-  pAnim->SetStopTime(Seconds(1.1));
-  pAnim->SetMaxPktsPerTraceFile(5000);
-  pAnim->EnablePacketMetadata();
+  // pAnim = new AnimationInterface("test.xml");
+  // pAnim->SetStartTime(Seconds(1));
+  // pAnim->SetStopTime(Seconds(1.1));
+  // pAnim->SetMaxPktsPerTraceFile(100000);
+  // pAnim->EnablePacketMetadata();
 
   // 流量监控
   Ptr<FlowMonitor> flowMonitor;
@@ -232,84 +249,99 @@ int main(int argc, char *argv[]) {
     MPid2colortype[i] = 0;  // default color
   }
 
-  double send_time = 20;
-  double total_time = send_time + 10;
-  uint32_t recvid = 6;
-  std::default_random_engine rng(nSrandSeed);
-  std::uniform_real_distribution<double> uni(1e-6, 2e-3);
-  OnOffHelper onOffAttack(
-      "ns3::UdpSocketFactory",
-      Address(InetSocketAddress(adhoc_ipv4.GetAddress(recvid), normalport)));
-  // SetConstantRate必须放前面
-  onOffAttack.SetConstantRate(DataRate((kPacketSize << 3) * kAttackerRate),
-                              kPacketSize);
-  onOffAttack.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-  onOffAttack.SetAttribute(
-      "OffTime", StringValue("ns3::UniformRandomVariable[Min=0|Max=0.02]"));
+  double send_time = 60;
+  double total_time = send_time + 5;
+  // uint32_t recvid = 6;
+  uint32_t recvid = 55;
 
   NodeContainer attackers;
   {
-    vector<uint32_t> V{64, 35, 83, 0, 62, 24};
+    std::default_random_engine rng(nSrandSeed);
+    std::uniform_real_distribution<double> uni(1e-6, 2.);
+    // vector<uint32_t> V{64, 35, 83, 0, 62, 24};
+    vector<uint32_t> V{179, 109, 44, 25};
     shuffle(V.begin(), V.end(), rng);
     for (auto x : V) {
+      OnOffHelper onOffAttack(
+          "ns3::UdpSocketFactory",
+          Address(InetSocketAddress(adhoc_ipv4.GetAddress(recvid), normalport)));
+      // SetConstantRate必须放前面
+      onOffAttack.SetConstantRate(DataRate((kPacketSize << 3) * kAttackerRate),
+                                  kPacketSize);
+      onOffAttack.SetAttribute(
+          "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=5]"));
+      onOffAttack.SetAttribute(
+          "OffTime", StringValue("ns3::UniformRandomVariable[Min=0|Max=4]"));
       attackers.Add(adhoc_nodes.Get(x));
-      pAnim->UpdateNodeDescription(adhoc_nodes.Get(x), "attacker");
-      pAnim->UpdateNodeColor(adhoc_nodes.Get(x), kColors[5].r, kColors[5].g,
-                             kColors[5].b);
-      MPid2colortype[x] = 5;
+      // pAnim->UpdateNodeDescription(adhoc_nodes.Get(x), "attacker");
+      // pAnim->UpdateNodeColor(adhoc_nodes.Get(x), kColors[7].r, kColors[7].g, kColors[7].b);
+      MPid2colortype[x] = 7;
+      // ApplicationContainer appAttacker = onOffAttack.Install(adhoc_nodes.Get(x));
+      // appAttacker.Start(Seconds(1.5 + uni(rng)));
+      // appAttacker.Stop(Seconds(1.5 + send_time));
     }
   }
-  ApplicationContainer appAttacker = onOffAttack.Install(attackers);
-  appAttacker.Start(Seconds(1.5 + uni(rng)));
-  appAttacker.Stop(Seconds(1.5 + send_time));
 
-  OnOffHelper onOffClient(
-      "ns3::UdpSocketFactory",
-      Address(InetSocketAddress(adhoc_ipv4.GetAddress(recvid), normalport)));
-  // SetConstantRate必须放前面
-  onOffClient.SetConstantRate(DataRate((kPacketSize << 3) * kClientRate),
-                              kPacketSize);
-  onOffClient.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-  onOffClient.SetAttribute(
-      "OffTime", StringValue("ns3::UniformRandomVariable[Min=0|Max=1]"));
 
   NodeContainer clients;
   {
-    vector<uint32_t> V{34, 48, 33, 13, 56, 10, 1,  22, 44,
-                       5,  31, 7,  15, 16, 17, 51, 52, 53};
+    std::default_random_engine rng(nSrandSeed);
+    std::uniform_real_distribution<double> uni(1e-6, 2.);
+    vector<uint32_t> V{34, 48, 33, 1,  22,
+                       15, 17, 51, 52, 53};
+    // vector<uint32_t> V{34, 48, 33, 13, 56, 10, 1,  22, 44,
+    //                    5,  31,  7,  15, 16, 17, 51, 52, 53};
+    // vector<uint32_t> V{26, 4, 3, 19, 1};
     shuffle(V.begin(), V.end(), rng);
     for (auto x : V) {
+      OnOffHelper onOffClient(
+          "ns3::TcpSocketFactory",
+          Address(InetSocketAddress(adhoc_ipv4.GetAddress(recvid), normalport)));
+      // SetConstantRate必须放前面
+      onOffClient.SetConstantRate(DataRate((kPacketSize << 3) * kClientRate),
+                                  kPacketSize);
+      onOffClient.SetAttribute(
+          "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+      onOffClient.SetAttribute(
+          "OffTime", StringValue("ns3::UniformRandomVariable[Min=0|Max=4]"));
       clients.Add(adhoc_nodes.Get(x));
-      pAnim->UpdateNodeDescription(adhoc_nodes.Get(x), "client");
-      pAnim->UpdateNodeColor(adhoc_nodes.Get(x), kColors[4].r, kColors[4].g,
-                             kColors[4].b);
+      // pAnim->UpdateNodeDescription(adhoc_nodes.Get(x), "client");
+      // pAnim->UpdateNodeColor(adhoc_nodes.Get(x), kColors[4].r, kColors[4].g, kColors[4].b);
       MPid2colortype[x] = 4;
       Sclientip.insert(adhoc_ipv4.GetAddress(x));
+      ApplicationContainer appClient = onOffClient.Install(adhoc_nodes.Get(x));
+      appClient.Start(Seconds(2.8 + uni(rng)));
+      appClient.Stop(Seconds(1. + send_time));
     }
   }
-  ApplicationContainer appClient = onOffClient.Install(clients);
-  appClient.Start(Seconds(1.8 + uni(rng)));
-  appClient.Stop(Seconds(1.5 + send_time));
 
-  pAnim->UpdateNodeDescription(adhoc_nodes.Get(recvid), "server");
-  pAnim->UpdateNodeColor(adhoc_nodes.Get(recvid), kColors[3].r, kColors[3].g,
-                         kColors[3].b);
+  // pAnim->UpdateNodeDescription(adhoc_nodes.Get(recvid), "server");
+  // pAnim->UpdateNodeColor(adhoc_nodes.Get(recvid), kColors[3].r, kColors[3].g, kColors[3].b);
   MPid2colortype[recvid] = 3;
   // 设置服务器接受套接字，并设置Buffer大小
-  Ptr<Socket> recvsocket = Socket::CreateSocket(adhoc_nodes.Get(recvid), tid);
-  recvsocket->Bind(InetSocketAddress(Ipv4Address::GetAny(), normalport));
-  double recv_interval = 0.1;
-  recvsocket->SetAttribute(
-      "RcvBufSize",
-      UintegerValue(kPacketSize * kMaxPacketsEverySeconds * recv_interval));
-  // 间隔接受Buffer中数据，以Buffer满模拟服务器处理达到上界以此模拟服务器处理能力
-  Simulator::Schedule(Seconds(1e-9), &RecvNormal, recvsocket, recv_interval);
+  {
+    Ptr<Socket> recvsocket = Socket::CreateSocket(adhoc_nodes.Get(recvid), TypeId::LookupByName("ns3::UdpSocketFactory"));
+    recvsocket->Bind(InetSocketAddress(Ipv4Address::GetAny(), normalport));
+    double recv_interval = 1;
+    // recvsocket->SetAttribute("RcvBufSize", UintegerValue(kPacketSize * kServerRate * recv_interval));
+    // 间隔接受Buffer中数据，以Buffer满模拟服务器处理达到上界以此模拟服务器处理能力
+    Simulator::Schedule(Seconds(1e-9), &RecvNormal, recvsocket, recv_interval);
+  }
+  {
+    Ptr<Socket> recvsocket = Socket::CreateSocket(adhoc_nodes.Get(recvid), TypeId::LookupByName("ns3::TcpSocketFactory"));
+    recvsocket->Bind(InetSocketAddress(Ipv4Address::GetAny(), normalport));
+    recvsocket->Listen();
+    double recv_interval = 1;
+    // recvsocket->SetAttribute("RcvBufSize", UintegerValue(kPacketSize * kServerRate * recv_interval));
+    // 间隔接受Buffer中数据，以Buffer满模拟服务器处理达到上界以此模拟服务器处理能力
+    Simulator::Schedule(Seconds(1e-9), &RecvNormal, recvsocket, recv_interval);
+    kAcceptPacket = kServerRate * recv_interval;
+    kAcceptCnt = kAcceptPacket;
+    kAcceptTimeFlag = Seconds(1e-9);
+  }
 
   // 设置颜色变化更新
-  Simulator::Schedule(Seconds(1e-3), &UpdateNodeColor, adhoc_nodes,
-                      MPid2colortype, kUpdateTime);
+  // Simulator::Schedule(Seconds(1e-3), &UpdateNodeColor, adhoc_nodes, MPid2colortype, kUpdateTime);
 
   // phy.EnablePcap("rgg2", adhoc_devices);
   // Ptr<OutputStreamWrapper> routingStream =
@@ -318,26 +350,20 @@ int main(int argc, char *argv[]) {
 
   Simulator::Stop(Seconds(total_time));
 
+
   Simulator::Run();
-
-  // std::stringstream flowmonfile;
-  // flowmonfile.precision(2);
-  // flowmonfile << "./rgg2data/smallpacket_" << std::setiosflags(ios::fixed)
-  //             << kProbProbeContinue << "_" << std::setiosflags(ios::fixed)
-  //             << kProbDefendContinue << "_" << nOutFileId << ".flowmon";
-  // flowMonitor->SerializeToXmlFile(flowmonfile.str(), false, false);
-
   {
+    std::stringstream flowmonfile_simple;
+    flowmonfile_simple.precision(2);
+
+    // flowmonfile_simple << "./rgg2data/vary_p1_3_morenode/log_" << stime << ".out";
+    flowmonfile_simple << "./rgg2data/vary_p1_3_nocollision/test_" << nOutFileId << "_p1_"
+                       << std::setiosflags(ios::fixed) << kProbProbeContinue << ".out";
+    std::ofstream outfile(flowmonfile_simple.str());
     std::map<FlowId, FlowMonitor::FlowStats> flowStats =
         flowMonitor->GetFlowStats();
     Ptr<Ipv4FlowClassifier> classifier =
         DynamicCast<Ipv4FlowClassifier>(flowMonitorHelper.GetClassifier());
-    std::stringstream flowmonfile_simple;
-    flowmonfile_simple.precision(2);
-
-    stime.pop_back();
-    flowmonfile_simple << "./rgg2data/oneturn/test_" << stime << ".out";
-    std::ofstream outfile(flowmonfile_simple.str());
     std::map<Ipv4Address, string> MP;
     std::vector<uint32_t> V;
     for (uint32_t i = 0; i < attackers.GetN(); i++)
@@ -353,15 +379,17 @@ int main(int argc, char *argv[]) {
           tmp.destinationPort == normalport) {
         //
         std::stringstream ss;
-        ss << tmp.sourceAddress << " >>> " << tmp.destinationAddress << ": ";
-        ss << item.second.txPackets << "/" << item.second.rxPackets;
-        MP[tmp.sourceAddress] = ss.str();
-        if (item.second.txPackets < 200) {
+        ss << tmp.sourceAddress << " >>> " << tmp.destinationAddress;
+        ss << ", IP layer: " << item.second.txPackets << "/" << item.second.rxPackets;
+        if(Sclientip.find(tmp.sourceAddress) != Sclientip.end()){
+          ss << ", Socket(Application): " << item.second.rxPackets << "/" << MPclientcnt[tmp.sourceAddress];
           txcnt += item.second.txPackets;
           rxcnt += item.second.rxPackets;
         }
+        MP[tmp.sourceAddress] = ss.str();
       }
     }
+    outfile << stime << std::endl;
     outfile << "Number of wifi ad devices " << nAdHocNum << std::endl;
     outfile << "ns3 random seed " << nNs3Seed << std::endl;
     outfile << "c++ random seed " << nSrandSeed << std::endl;
@@ -371,7 +399,9 @@ int main(int argc, char *argv[]) {
     outfile << "kProbeTtl " << kProbeTtl << std::endl;
     outfile << "kDefendTtl " << kDefendTtl << std::endl;
     outfile << "kPacketSize(B) " << kPacketSize << std::endl;
-    outfile << "kPacketMaxSpeed(packet/s) " << kMaxPacketsEverySeconds
+    outfile << "kServerRate(packet/s) " << kServerRate
+            << std::endl;
+    outfile << "kAttackerRate(packet/s) " << kAttackerRate
             << std::endl;
     outfile << "kUpdateTime(s) " << kUpdateTime << std::endl;
     outfile << "FlagValidTime(s) " << kUpdateTime * 20. << std::endl;
@@ -385,10 +415,12 @@ int main(int argc, char *argv[]) {
     for (auto x : V) outfile << MP[adhoc_ipv4.GetAddress(x)] << std::endl;
     outfile << "Ip layer total receive/send: " << 100. * rxcnt / txcnt << "%"
             << std::endl;
-    outfile << "Socket(server) total receive/send: "
-            << 100. * cnt_recvnormalpacket / txcnt << "%" << std::endl;
+    outfile << "Socket total accept/send: " << 100. * cnt_recvnormalpacket / txcnt << "%" << std::endl;
+    outfile << "App total accept/receive: " << 100. * cnt_recvnormalpacket / rxcnt << "%" << std::endl;
     outfile.close();
   }
+
+
   Simulator::Destroy();
   delete pAnim;
 
@@ -402,18 +434,27 @@ void RecvNormal(Ptr<Socket> sock, double interval) {
   Ptr<Packet> packet;
   while (packet = sock->RecvFrom(org_src)) {
     InetSocketAddress inet_src = InetSocketAddress::ConvertFrom(org_src);
-    NS_LOG_DEBUG("received a normal packet from " << inet_src.GetIpv4() << " "
-                                                  << inet_src.GetPort());
-    std::cout << "received a normal packet from " << inet_src.GetIpv4() << " "
-              << inet_src.GetPort() << std::endl;
-    if (Sclientip.find(inet_src.GetIpv4()) != Sclientip.end())
-      cnt_recvnormalpacket++;
+    if (kAcceptCnt){
+      NS_LOG_DEBUG("received a normal packet from " << inet_src.GetIpv4() << " "
+                                                    << inet_src.GetPort());
+      std::cout << "received a normal packet from " << inet_src.GetIpv4() << " "
+                << inet_src.GetPort() << std::endl;
+      if (Sclientip.find(inet_src.GetIpv4()) != Sclientip.end()){
+        cnt_recvnormalpacket++;
+        MPclientcnt[inet_src.GetIpv4()]++;
+      }
+    }
+  }
+  if (Now() - kAcceptTimeFlag > Seconds(0.8)){
+    kAcceptTimeFlag = Now();
+    kAcceptCnt = kAcceptPacket;
   }
   Simulator::Schedule(Seconds(interval), &RecvNormal, sock, interval);
 }
 
 void RecvSpecailCallback(Ptr<Socket> sock) {
   NS_LOG_DEBUG("Probe Callback");
+
   Address org_src;
   Ptr<Packet> packet = sock->RecvFrom(org_src);
   InetSocketAddress inet_src = InetSocketAddress::ConvertFrom(org_src);
@@ -432,6 +473,8 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
   // std::cout << Names::FindName(node) << " Pid: " << probetag.GetPid() <<
   // std::endl;
 
+  if (MPid2colortype[node->GetId()] == 7) return; // attacker
+
   Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
   Ipv4Address nodeip = ipv4->GetAddress(1, 0).GetLocal();
 
@@ -441,14 +484,16 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
       AodvHelper::GetRouting<aodv::RoutingProtocol>(iprtp);
   aodv::RoutingTable aodv_rtt = aodv_rtp->GetRoutingTable();
   std::default_random_engine rng(rand());
-  std::uniform_real_distribution<double> uni(1e-6, 2e-3);
   if (probetag.GetFlag() != Node::kNodeFlag::FLAG_NORMAL) {
-    if (node->GetFlag() == Node::kNodeFlag::FLAG_NORMAL) {
+    if (node->GetFlag() == Node::kNodeFlag::FLAG_NORMAL || probetag.GetFlag() == Node::kNodeFlag::FLAG_PROBE) {
       node->SetFlag(probetag.GetFlag());
       if (MPid2colortype[node->GetId()] == 0) {
         uint32_t cid = probetag.GetFlag();
-        pAnim->UpdateNodeColor(node, kColors[cid].r, kColors[cid].g,
-                               kColors[cid].b);
+        // pAnim->UpdateNodeColor(node, kColors[cid].r, kColors[cid].g, kColors[cid].b);
+      }
+      else if (MPid2colortype[node->GetId()] == 4) {
+        uint32_t cid = probetag.GetFlag() + 4;
+        // pAnim->UpdateNodeColor(node, kColors[cid].r, kColors[cid].g, kColors[cid].b);
       }
     }
     for (auto item : probetag.GetFilterPairs()) {
@@ -487,7 +532,8 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
         filterPair pir = std::make_pair(nodeip, nexthop);
         if (node->IsAttacker(pir)) continue;
 
-        // send probe packet to neighbor
+        // std::cout << "dst: " << item.first << ", rtte next hop: " << rtte.GetNextHop() << std::endl;
+        // send special packet to neighbor
         double rnd = 1. * rand() / RAND_MAX;
         if (probetag.GetFlag() == Node::kNodeFlag::FLAG_PROBE &&
             rnd > kProbProbeContinue)
@@ -497,6 +543,8 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
           continue;
         if (tmp.find(nexthop) != tmp.end()) continue;
         tmp.insert(nexthop);
+        // std::cout << "node " << Names::FindName(sock->GetNode()) << " send to"
+        //           << nexthop << std::endl;
         NS_LOG_DEBUG(Now() << " forward packet to " << nexthop);
         SendSpecialPacket(sock, InetSocketAddress(nexthop, kProbePort),
                           probetag.GetFlag(), probetag.GetFlagTtl() - 1,
@@ -511,8 +559,8 @@ void RecvSpecailCallback(Ptr<Socket> sock) {
   }
 }
 
-void AodvSendDependPacket(Ptr<Node> node, filterPair src2dst) {
-  std::cout << Names::FindName(node) << ": send depend packet" << std::endl;
+void AodvSendDefendPacket(Ptr<Node> node, filterPair src2dst) {
+  std::cout << Names::FindName(node) << ": send defend packet" << std::endl;
   std::cout << src2dst.first << ">>>" << src2dst.second << std::endl;
   Ptr<Socket> sock =
       Socket::CreateSocket(node, TypeId::LookupByName("ns3::UdpSocketFactory"));
@@ -572,7 +620,7 @@ void ThroughputMonitor(FlowMonitorHelper *flowMonitorHelper,
       rxMP[item.first] = item.second.rxBytes;
     }
   }
-  if (num > (uint32_t)(kUpdateTime * kMaxPacketsEverySeconds * kPacketSize)) {
+  if (num > (uint32_t)(kUpdateTime * kServerRate * kPacketSize)) {
     std::set<filterPair> S1;
     for (auto item : S) {
       NS_LOG_DEBUG("suspicious path: " << item << " >> " << nodeip);
@@ -585,7 +633,7 @@ void ThroughputMonitor(FlowMonitorHelper *flowMonitorHelper,
     //                        Node::kNodeFlag::FLAG_PROBE, kProbeTtl + 1, 1,
     //                        rand(), S1);  // 因为向自己发包故+1
     SendSpecialPacket(sock, InetSocketAddress(nodeip, kProbePort), Node::kNodeFlag::FLAG_PROBE,
-                      kProbeTtl + 1, sock->GetNode()->GetId(), rand(), S1);
+                      kProbeTtl, sock->GetNode()->GetId(), rand(), S1);
   }
   Simulator::Schedule(Seconds(kUpdateTime), &ThroughputMonitor,
                       flowMonitorHelper, flowMonitor, sock, rxMP);
@@ -597,8 +645,7 @@ void UpdateNodeColor(NodeContainer nodes,
   for (uint32_t i = 0; i < nodes.GetN(); i++)
     if (nodes.Get(i)->GetFlag() == Node::kNodeFlag::FLAG_NORMAL) {
       uint32_t cid = MPid2color[i];
-      pAnim->UpdateNodeColor(nodes.Get(i), kColors[cid].r, kColors[cid].g,
-                             kColors[cid].b);
+      // pAnim->UpdateNodeColor(nodes.Get(i), kColors[cid].r, kColors[cid].g, kColors[cid].b);
       // pAnim->UpdateNodeDescription(nodes.Get(i), dcrp);
     }
   Simulator::Schedule(Seconds(interval), &UpdateNodeColor, nodes, MPid2color,
