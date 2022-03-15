@@ -86,6 +86,23 @@ RequestQueue::DropPacketWithDst (Ipv4Address dst)
   m_queue.erase (new_end, m_queue.end ());
 }
 
+void RequestQueue::DropPacketWithSrc2Dst(Ipv4Address src, Ipv4Address dst) {
+  NS_LOG_FUNCTION(this << src << dst);
+  Purge();
+  for (auto item = m_queue.begin(); item != m_queue.end(); item++) {
+      if (item->GetIpv4Header().GetSource() == src &&
+          item->GetIpv4Header().GetDestination() == dst) {
+          Drop (*item, "DropPacketWithSrc2Dst ");
+        }
+    }
+  auto new_end = std::remove_if(m_queue.begin (), m_queue.end (),
+                                [&](const QueueEntry& en) {
+                                  return (en.GetIpv4Header().GetSource() == src &&
+                                          en.GetIpv4Header().GetDestination() == dst);
+                                });
+  m_queue.erase (new_end, m_queue.end ());
+}
+
 bool
 RequestQueue::Dequeue (Ipv4Address dst, QueueEntry & entry)
 {

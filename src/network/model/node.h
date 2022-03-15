@@ -120,6 +120,7 @@ public:
   void SetDefendAttackerThrsh(uint32_t thrsh);
   // count the number of drop packet. if rt = 1 and node is probe node, send defend packet.
   bool CountDrop(std::pair<Ipv4Address, Ipv4Address> src2dst);
+  uint32_t QueryDropN(std::pair<Ipv4Address, Ipv4Address> src2dst);
 
   /**
    * Packet whether suspicious
@@ -386,7 +387,7 @@ private:
   uint32_t m_defend_attacker_thrsh; //!< Defend node receive enough tag packet to filter the certain ip.
   Time m_attacker_validtime;
   std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>> m_attackers;
-  std::map<std::pair<Ipv4Address, Ipv4Address>, uint32_t> m_countdrops; //!< Count drop packets
+  std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<uint32_t, uint32_t>> m_countdrops; //!< Count drop packets and Backoff
   std::vector<Ptr<NetDevice> > m_devices; //!< Devices associated to this node
   std::vector<Ptr<Application> > m_applications; //!< Applications associated to this node
   ProtocolHandlerList m_handlers; //!< Protocol handlers in the node

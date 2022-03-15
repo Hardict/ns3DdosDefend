@@ -159,6 +159,7 @@ BasicEnergySource::UpdateEnergySource (void)
 
   m_lastUpdateTime = Simulator::Now ();
 
+  // std::cout << m_depleted << " " << m_remainingEnergyJ << " " << m_lowBatteryTh << " " << m_initialEnergyJ << std::endl;
   if (!m_depleted && m_remainingEnergyJ <= m_lowBatteryTh * m_initialEnergyJ)
     {
       m_depleted = true;

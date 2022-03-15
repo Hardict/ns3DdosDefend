@@ -636,6 +636,7 @@ WifiPhyStateHelper::SwitchToOff (void)
     }
   m_previousStateChangeTime = now;
   m_isOff = true;
+  // std::cout << "=============" << std::endl;
   NotifyOff ();
   NS_ASSERT (IsStateOff ());
 }

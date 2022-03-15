@@ -354,6 +354,7 @@ void OnOffApplication::SendPacket ()
       m_socket->GetSockName (localAddress);
       if (InetSocketAddress::IsMatchingType (m_peer))
         {
+          NS_LOG_DEBUG("node" << m_socket->GetNode()->GetId());
           NS_LOG_INFO ("At time " << Simulator::Now ().As (Time::S)
                        << " on-off application sent "
                        <<  packet->GetSize () << " bytes to "

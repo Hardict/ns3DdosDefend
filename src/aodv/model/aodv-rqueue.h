@@ -211,6 +211,12 @@ public:
    */
   void DropPacketWithDst (Ipv4Address dst);
   /**
+   * Remove all packets with destination IP address pair
+   * \param src the source IP address
+   * \param dst the destination IP address
+   */
+  void DropPacketWithSrc2Dst(Ipv4Address src, Ipv4Address dst);
+  /**
    * Finds whether a packet with destination dst exists in the queue
    * 
    * \param dst the destination IP address

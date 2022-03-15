@@ -2,6 +2,7 @@
 #include "ns3/aodv-helper.h"
 #include "ns3/aodv-routing-protocol.h"
 #include "ns3/aodv-rtable.h"
+#include "ns3/dsdv-helper.h"
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"
 #include "ns3/flow-monitor-helper.h"
@@ -12,6 +13,9 @@
 #include "ns3/network-module.h"
 #include "ns3/on-off-helper.h"
 #include "ns3/wifi-module.h"
+#include "ns3/energy-module.h"
+#include "ns3/energy-source-container.h"
+#include "ns3/wifi-radio-energy-model-helper.h"
 
 using namespace ns3;
 using namespace std;
@@ -49,9 +53,6 @@ uint32_t kServerRate = 50;  // 每秒至收发x个包
 double kUpdateTime = 0.5;
 uint32_t kAttackerRate = kServerRate;
 uint32_t kClientRate = 2;
-uint32_t kAcceptPacket;
-uint32_t kAcceptCnt;
-Time kAcceptTimeFlag;
 using filterPair =
     std::pair<Ipv4Address, Ipv4Address>;  // suspicious path: Attacker>>Victim
 class MyTag : public Tag {
@@ -115,7 +116,7 @@ int main(int argc, char *argv[]) {
   // LogComponentEnable("MyCode", LOG_LEVEL_ALL);
   // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
   // LogComponentEnable("OnOffApplication", LOG_LEVEL_ALL);
-  // LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_ALL);
+  // LogComponentEnable("AodvRequestQueue", LOG_LEVEL_ALL);
   // NS_LOG_DEBUG("Test LOG");
 
   time_t now = time(0);
@@ -129,6 +130,12 @@ int main(int argc, char *argv[]) {
   uint32_t nNs3Seed = 6;
   uint32_t nSrandSeed = (unsigned)time(nullptr);
   uint32_t nOutFileId = 0;
+  double send_start_time = 30;
+  double send_end_time = 90;
+  double total_time = send_end_time + 5;
+  // Config::SetDefault("ns3::WifiMacQueue::MaxSize", QueueSizeValue(QueueSize(QueueSizeUnit::PACKETS, std::numeric_limits<int32_t>::max())));
+  // Config::SetDefault("ns3::WifiMacQueue::MaxDelay", TimeValue(Seconds(10)));
+  Config::SetDefault("ns3::WifiRemoteStationManager::NonUnicastMode", StringValue("DsssRate11Mbps"));
 
   CommandLine cmd;
   cmd.AddValue("nAdHocNum", "Number of wifi ad devices", nAdHocNum);
@@ -146,7 +153,7 @@ int main(int argc, char *argv[]) {
   cmd.AddValue("kAttackerRate", "kAttackerRate", kAttackerRate);
   cmd.AddValue("kUpdateTime", "kUpdateTime", kUpdateTime);
   cmd.Parse(argc, argv);
-  kProbProbeContinue /= 100.;
+  kProbProbeContinue /= 1000.;
   kProbDefendContinue /= 100.;
   // srand((unsigned)time(nullptr));
   srand(nSrandSeed);
@@ -157,52 +164,101 @@ int main(int argc, char *argv[]) {
     std::ostringstream os;
     os << "node-" << i;
     Names::Add(os.str(), adhoc_nodes.Get(i));
-    adhoc_nodes.Get(i)->SetFlagValidTime(Seconds(kUpdateTime * 40.));
-    adhoc_nodes.Get(i)->SetSuspiciousValidTime(Seconds(kUpdateTime * 39.));
-    adhoc_nodes.Get(i)->SetAttackerValidTime(Seconds(kUpdateTime * 38.));
+    adhoc_nodes.Get(i)->SetFlagValidTime(Seconds(kUpdateTime * 60.));
+    adhoc_nodes.Get(i)->SetSuspiciousValidTime(Seconds(kUpdateTime * 59.));
+    adhoc_nodes.Get(i)->SetAttackerValidTime(Seconds(kUpdateTime * 58.));
     adhoc_nodes.Get(i)->SetProbeResendThrsh(10);
     adhoc_nodes.Get(i)->SetDefendAttackerThrsh(2);
     adhoc_nodes.Get(i)->SetProbeAttackerThrsh(kClientRate *
-                                              (uint32_t)(kUpdateTime * 20));
+                                              (uint32_t)(kUpdateTime * 60));
     adhoc_nodes.Get(i)->SetAttackerProb(0.5);
   }
 
-  YansWifiChannelHelper channel = YansWifiChannelHelper::Default();
-  YansWifiPhyHelper phy;
-  // phy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
-  phy.SetChannel(channel.Create());
+  YansWifiChannelHelper wifiChannel;
+  wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
+  // wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
+  wifiChannel.AddPropagationLoss("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (250));
+  YansWifiPhyHelper wifiPhy;
+  // wifiPhy.Set ("TxPowerStart",DoubleValue (txp));
+  // wifiPhy.Set ("TxPowerEnd", DoubleValue (txp));
+  // wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
+  wifiPhy.SetChannel(wifiChannel.Create());
 
   WifiHelper wifi;
-  wifi.SetStandard(WIFI_STANDARD_80211a); //设置标准
+  wifi.SetStandard(WIFI_STANDARD_80211b); //设置标准
   wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager",
-                                "DataMode", StringValue("OfdmRate6Mbps"),
-                                "RtsCtsThreshold", UintegerValue (0));
+                                "DataMode", StringValue("DsssRate11Mbps"),
+                                "ControlMode", StringValue("DsssRate11Mbps"),
+                                "RtsCtsThreshold", UintegerValue(2000));
 
-  WifiMacHelper mac;
-  mac.SetType("ns3::AdhocWifiMac");
+  WifiMacHelper wifiMac;
+  wifiMac.SetType("ns3::AdhocWifiMac");
 
   NetDeviceContainer adhoc_devices;
-  adhoc_devices = wifi.Install(phy, mac, adhoc_nodes);
+  adhoc_devices = wifi.Install(wifiPhy, wifiMac, adhoc_nodes);
 
-  MobilityHelper mobility;
+  uint32_t serverid = 0;
+
   RngSeedManager::SetSeed(nNs3Seed);
-  mobility.SetPositionAllocator(
-      "ns3::RandomRectanglePositionAllocator", "X",
-      StringValue("ns3::UniformRandomVariable[Min=0|Max=500]"), "Y",
-      StringValue("ns3::UniformRandomVariable[Min=0|Max=500]"));
+  MobilityHelper mobility;
+  double xMax = 1000, yMax = 2000;
+  {
+    Ptr<ListPositionAllocator> positionAP = CreateObject<ListPositionAllocator>();
+    positionAP->Add(Vector(xMax / 2, yMax / 2, 0));
+    mobility.SetPositionAllocator(positionAP);
+    mobility.Install(adhoc_nodes.Get(serverid));
+  }
+  {
+    Ptr<ListPositionAllocator> positionAP = CreateObject<ListPositionAllocator>();
+    positionAP->Add(Vector(0.1*xMax, 0.1*yMax, 0));
+    mobility.SetPositionAllocator(positionAP);
+    mobility.Install(adhoc_nodes.Get(1));
+  }
+  {
+    Ptr<ListPositionAllocator> positionAP = CreateObject<ListPositionAllocator>();
+    positionAP->Add(Vector(0.9*xMax, 0.1*yMax, 0));
+    mobility.SetPositionAllocator(positionAP);
+    mobility.Install(adhoc_nodes.Get(2));
+  }
+  {
+    Ptr<ListPositionAllocator> positionAP = CreateObject<ListPositionAllocator>();
+    positionAP->Add(Vector(0.9*xMax, 0.9*yMax, 0));
+    mobility.SetPositionAllocator(positionAP);
+    mobility.Install(adhoc_nodes.Get(3));
+  }
+  {
+    Ptr<ListPositionAllocator> positionAP = CreateObject<ListPositionAllocator>();
+    positionAP->Add(Vector(0.1*xMax, 0.9*yMax, 0));
+    mobility.SetPositionAllocator(positionAP);
+    mobility.Install(adhoc_nodes.Get(4));
+  }
+
+  Ptr<RandomRectanglePositionAllocator> randomPosition =
+    CreateObject<RandomRectanglePositionAllocator>();
+  randomPosition->SetAttribute(
+      "X", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1000.0]"));
+  randomPosition->SetAttribute(
+      "Y", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=2000.0]"));
+  mobility.SetPositionAllocator(randomPosition);
   mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   // mobility.SetMobilityModel(
-  //     "ns3::RandomWalk2dMobilityModel", "Mode", StringValue("Time"), "Time",
-  //     StringValue("2s"), "Speed",
-  //     StringValue("ns3::UniformRandomVariable[Min=2.5|Max=5.0]"), "Bounds",
-  //     RectangleValue(Rectangle(0.0, 250.0, 0.0, 250.0)));
-  mobility.Install(adhoc_nodes);
+  //     "ns3::RandomWalk2dMobilityModel", "Mode", StringValue("Time"),
+  //     "Time", StringValue("2s"),
+  //     "Speed", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=50.0]"),
+  //     "Bounds", RectangleValue(Rectangle(0.0, 1000.0, 0.0, 2000.0)));
+  // mobility.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
+  //                               "Speed", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=20.0]"),
+  //                               "Pause", StringValue ("ns3::ConstantRandomVariable[Constant=0]"),
+  //                               "PositionAllocator", PointerValue (randomPosition));
+  for (uint32_t i = 1 + 4; i < adhoc_nodes.GetN(); i++) 
+      mobility.Install(adhoc_nodes.Get(i));
 
   AodvHelper aodv;
   // aodv.Set("HelloInterval", TimeValue(Seconds(999.)));
+  aodv.Set("MaxQueueLen", UintegerValue(std::numeric_limits<int32_t>::max()));
   // aodv.Set("ActiveRouteTimeout", TimeValue(Seconds(0.5)));
   // aodv.Set("DeletePeriod", TimeValue(Seconds(1)));
-  Ipv4StaticRoutingHelper static_routing;
+  Ipv4StaticRoutingHelper static_routing; // 给自身发包
   Ipv4ListRoutingHelper list;
   list.Add(static_routing, 0);
   list.Add(aodv, 10);
@@ -210,8 +266,16 @@ int main(int argc, char *argv[]) {
   internet.SetRoutingHelper(list);
   internet.Install(adhoc_nodes);
 
+  /** Energy Model **/
+  BasicEnergySourceHelper basicSourceHelper;
+  basicSourceHelper.Set("BasicEnergySourceInitialEnergyJ", DoubleValue(50000.0));// configure energy source for StaNodes
+  EnergySourceContainer sources = basicSourceHelper.Install(adhoc_nodes);
+  WifiRadioEnergyModelHelper radioEnergyHelper;
+  radioEnergyHelper.Set ("IdleCurrentA", DoubleValue (0.1));
+  DeviceEnergyModelContainer adhoc_device_energy_model = radioEnergyHelper.Install(adhoc_devices, sources); // install device model
+
   // 在aodv协议中绑定防御包发送
-  for (uint32_t i = 0; i < nAdHocNum; ++i) {
+  for (uint32_t i = 0; i < nAdHocNum; i++) {
     Ptr<Ipv4L3Protocol> ipl3p = adhoc_nodes.Get(i)->GetObject<Ipv4L3Protocol>();
     Ptr<Ipv4RoutingProtocol> iprtp = ipl3p->GetRoutingProtocol();
     Ptr<aodv::RoutingProtocol> aodv_rtp =
@@ -220,16 +284,17 @@ int main(int argc, char *argv[]) {
   }
 
   Ipv4AddressHelper address;
-  address.SetBase("195.1.1.0", "255.255.255.0");
+  address.SetBase("10.1.1.0", "255.255.255.0");
 
   Ipv4InterfaceContainer adhoc_ipv4;
   adhoc_ipv4 = address.Assign(adhoc_devices);
 
-  // pAnim = new AnimationInterface("test.xml");
-  // pAnim->SetStartTime(Seconds(1));
+  pAnim = new AnimationInterface("test.xml");
+  pAnim->SetStartTime(Seconds(1));
   // pAnim->SetStopTime(Seconds(1.1));
-  // pAnim->SetMaxPktsPerTraceFile(100000);
-  // pAnim->EnablePacketMetadata();
+  pAnim->SetMaxPktsPerTraceFile(100000);
+  pAnim->EnablePacketMetadata();
+  pAnim->EnableIpv4RouteTracking("rgg2.routes", Seconds(0), Seconds(send_end_time));
 
   // 流量监控
   Ptr<FlowMonitor> flowMonitor;
@@ -249,36 +314,33 @@ int main(int argc, char *argv[]) {
     MPid2colortype[i] = 0;  // default color
   }
 
-  double send_time = 60;
-  double total_time = send_time + 5;
-  // uint32_t recvid = 6;
-  uint32_t recvid = 55;
+  // uint32_t serverid = 6;
 
   NodeContainer attackers;
   {
     std::default_random_engine rng(nSrandSeed);
     std::uniform_real_distribution<double> uni(1e-6, 2.);
     // vector<uint32_t> V{64, 35, 83, 0, 62, 24};
-    vector<uint32_t> V{179, 109, 44, 25};
+    vector<uint32_t> V{1, 2, 3, 4};
     shuffle(V.begin(), V.end(), rng);
     for (auto x : V) {
       OnOffHelper onOffAttack(
           "ns3::UdpSocketFactory",
-          Address(InetSocketAddress(adhoc_ipv4.GetAddress(recvid), normalport)));
+          Address(InetSocketAddress(adhoc_ipv4.GetAddress(serverid), normalport)));
       // SetConstantRate必须放前面
       onOffAttack.SetConstantRate(DataRate((kPacketSize << 3) * kAttackerRate),
                                   kPacketSize);
       onOffAttack.SetAttribute(
-          "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=5]"));
+          "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=2]"));
       onOffAttack.SetAttribute(
-          "OffTime", StringValue("ns3::UniformRandomVariable[Min=0|Max=4]"));
+          "OffTime", StringValue("ns3::UniformRandomVariable[Min=0|Max=0.1]"));
       attackers.Add(adhoc_nodes.Get(x));
       // pAnim->UpdateNodeDescription(adhoc_nodes.Get(x), "attacker");
       // pAnim->UpdateNodeColor(adhoc_nodes.Get(x), kColors[7].r, kColors[7].g, kColors[7].b);
       MPid2colortype[x] = 7;
-      // ApplicationContainer appAttacker = onOffAttack.Install(adhoc_nodes.Get(x));
-      // appAttacker.Start(Seconds(1.5 + uni(rng)));
-      // appAttacker.Stop(Seconds(1.5 + send_time));
+      ApplicationContainer appAttacker = onOffAttack.Install(adhoc_nodes.Get(x));
+      appAttacker.Start(Seconds(send_start_time + uni(rng)));
+      appAttacker.Stop(Seconds(send_end_time));
     }
   }
 
@@ -287,78 +349,69 @@ int main(int argc, char *argv[]) {
   {
     std::default_random_engine rng(nSrandSeed);
     std::uniform_real_distribution<double> uni(1e-6, 2.);
-    vector<uint32_t> V{34, 48, 33, 1,  22,
-                       15, 17, 51, 52, 53};
+    vector<uint32_t> V{5,6,7,8,9,10,11,12,13,14};
     // vector<uint32_t> V{34, 48, 33, 13, 56, 10, 1,  22, 44,
     //                    5,  31,  7,  15, 16, 17, 51, 52, 53};
     // vector<uint32_t> V{26, 4, 3, 19, 1};
     shuffle(V.begin(), V.end(), rng);
     for (auto x : V) {
       OnOffHelper onOffClient(
-          "ns3::TcpSocketFactory",
-          Address(InetSocketAddress(adhoc_ipv4.GetAddress(recvid), normalport)));
+          "ns3::UdpSocketFactory",
+          Address(InetSocketAddress(adhoc_ipv4.GetAddress(serverid), normalport)));
       // SetConstantRate必须放前面
       onOffClient.SetConstantRate(DataRate((kPacketSize << 3) * kClientRate),
                                   kPacketSize);
       onOffClient.SetAttribute(
-          "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+          "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=2]"));
       onOffClient.SetAttribute(
-          "OffTime", StringValue("ns3::UniformRandomVariable[Min=0|Max=4]"));
+          "OffTime", StringValue("ns3::UniformRandomVariable[Min=2|Max=4]"));
       clients.Add(adhoc_nodes.Get(x));
       // pAnim->UpdateNodeDescription(adhoc_nodes.Get(x), "client");
       // pAnim->UpdateNodeColor(adhoc_nodes.Get(x), kColors[4].r, kColors[4].g, kColors[4].b);
       MPid2colortype[x] = 4;
       Sclientip.insert(adhoc_ipv4.GetAddress(x));
       ApplicationContainer appClient = onOffClient.Install(adhoc_nodes.Get(x));
-      appClient.Start(Seconds(2.8 + uni(rng)));
-      appClient.Stop(Seconds(1. + send_time));
+      appClient.Start(Seconds(send_start_time + uni(rng)));
+      appClient.Stop(Seconds(send_end_time));
     }
   }
 
-  // pAnim->UpdateNodeDescription(adhoc_nodes.Get(recvid), "server");
-  // pAnim->UpdateNodeColor(adhoc_nodes.Get(recvid), kColors[3].r, kColors[3].g, kColors[3].b);
-  MPid2colortype[recvid] = 3;
+  // pAnim->UpdateNodeDescription(adhoc_nodes.Get(serverid), "server");
+  // pAnim->UpdateNodeColor(adhoc_nodes.Get(serverid), kColors[3].r, kColors[3].g, kColors[3].b);
+  MPid2colortype[serverid] = 3;
   // 设置服务器接受套接字，并设置Buffer大小
   {
-    Ptr<Socket> recvsocket = Socket::CreateSocket(adhoc_nodes.Get(recvid), TypeId::LookupByName("ns3::UdpSocketFactory"));
+    Ptr<Socket> recvsocket = Socket::CreateSocket(adhoc_nodes.Get(serverid), TypeId::LookupByName("ns3::UdpSocketFactory"));
     recvsocket->Bind(InetSocketAddress(Ipv4Address::GetAny(), normalport));
-    double recv_interval = 1;
-    // recvsocket->SetAttribute("RcvBufSize", UintegerValue(kPacketSize * kServerRate * recv_interval));
+    double recv_interval = 0.5;
+    recvsocket->SetAttribute("RcvBufSize", UintegerValue(kPacketSize * kServerRate * recv_interval));
     // 间隔接受Buffer中数据，以Buffer满模拟服务器处理达到上界以此模拟服务器处理能力
     Simulator::Schedule(Seconds(1e-9), &RecvNormal, recvsocket, recv_interval);
-  }
-  {
-    Ptr<Socket> recvsocket = Socket::CreateSocket(adhoc_nodes.Get(recvid), TypeId::LookupByName("ns3::TcpSocketFactory"));
-    recvsocket->Bind(InetSocketAddress(Ipv4Address::GetAny(), normalport));
-    recvsocket->Listen();
-    double recv_interval = 1;
-    // recvsocket->SetAttribute("RcvBufSize", UintegerValue(kPacketSize * kServerRate * recv_interval));
-    // 间隔接受Buffer中数据，以Buffer满模拟服务器处理达到上界以此模拟服务器处理能力
-    Simulator::Schedule(Seconds(1e-9), &RecvNormal, recvsocket, recv_interval);
-    kAcceptPacket = kServerRate * recv_interval;
-    kAcceptCnt = kAcceptPacket;
-    kAcceptTimeFlag = Seconds(1e-9);
   }
 
   // 设置颜色变化更新
   // Simulator::Schedule(Seconds(1e-3), &UpdateNodeColor, adhoc_nodes, MPid2colortype, kUpdateTime);
 
-  // phy.EnablePcap("rgg2", adhoc_devices);
+  // phy.EnablePcapAll("./rgg2data/pcap/rgg2", true);
   // Ptr<OutputStreamWrapper> routingStream =
   // Create<OutputStreamWrapper>("rgg2.routes", std::ios::out);
   // aodv.PrintRoutingTableAllEvery(Seconds(1), routingStream);
 
   Simulator::Stop(Seconds(total_time));
 
-
+  std::cout << "Start" << std::endl;
   Simulator::Run();
   {
     std::stringstream flowmonfile_simple;
-    flowmonfile_simple.precision(2);
+    flowmonfile_simple.precision(3);
+    // flowMonitor->SerializeToXmlFile("./rgg2_test.flowmon",true,true);
 
     // flowmonfile_simple << "./rgg2data/vary_p1_3_morenode/log_" << stime << ".out";
-    flowmonfile_simple << "./rgg2data/vary_p1_3_nocollision/test_" << nOutFileId << "_p1_"
+    flowmonfile_simple << "./rgg2data/vary_p1_energy/log_" << nOutFileId << "_p1_"
                        << std::setiosflags(ios::fixed) << kProbProbeContinue << ".out";
+    // flowmonfile_simple << "./rgg2data/vary_p2_3_test/log_" << nOutFileId << "_p2_"
+    //                    << std::setiosflags(ios::fixed) << kProbDefendContinue << ".out";
+    // flowmonfile_simple << "./rgg2data/vary_p1_3_test/log_" << nOutFileId << "_noattack"<< ".out";
     std::ofstream outfile(flowmonfile_simple.str());
     std::map<FlowId, FlowMonitor::FlowStats> flowStats =
         flowMonitor->GetFlowStats();
@@ -371,11 +424,13 @@ int main(int argc, char *argv[]) {
     for (uint32_t i = 0; i < clients.GetN(); i++)
       V.push_back(clients.Get(i)->GetId());
     uint32_t txcnt = 0, rxcnt = 0;
+    Time avg_delay = Seconds(0), avg_jitter = Seconds(0);
+    double avg_throughput = 0;
     for (auto item : flowStats) {
       // FiveTuple五元组是：(source-ip, destination-ip, protocol, source-port,
       // destination-port)
       auto tmp = classifier->FindFlow(item.first);
-      if (tmp.destinationAddress == adhoc_ipv4.GetAddress(recvid) &&
+      if (tmp.destinationAddress == adhoc_ipv4.GetAddress(serverid) &&
           tmp.destinationPort == normalport) {
         //
         std::stringstream ss;
@@ -385,11 +440,20 @@ int main(int argc, char *argv[]) {
           ss << ", Socket(Application): " << item.second.rxPackets << "/" << MPclientcnt[tmp.sourceAddress];
           txcnt += item.second.txPackets;
           rxcnt += item.second.rxPackets;
+          avg_delay += item.second.delaySum;
+          avg_jitter += item.second.jitterSum;
+          avg_throughput += item.second.rxBytes * 8 / (item.second.timeLastRxPacket.GetSeconds() - 
+                                                       item.second.timeFirstTxPacket.GetSeconds()) / 1000;
         }
         MP[tmp.sourceAddress] = ss.str();
       }
     }
+    avg_delay = avg_delay / rxcnt;
+    avg_jitter = avg_jitter / rxcnt;
+
     outfile << stime << std::endl;
+    // outfile << "Mobility" << std::endl;
+    outfile << "======Params======" << std::endl;
     outfile << "Number of wifi ad devices " << nAdHocNum << std::endl;
     outfile << "ns3 random seed " << nNs3Seed << std::endl;
     outfile << "c++ random seed " << nSrandSeed << std::endl;
@@ -404,19 +468,30 @@ int main(int argc, char *argv[]) {
     outfile << "kAttackerRate(packet/s) " << kAttackerRate
             << std::endl;
     outfile << "kUpdateTime(s) " << kUpdateTime << std::endl;
-    outfile << "FlagValidTime(s) " << kUpdateTime * 20. << std::endl;
-    outfile << "SuspiciousValidTime(s) " << kUpdateTime * 19. << std::endl;
-    outfile << "AttackerValidTime(s) " << kUpdateTime * 18. << std::endl;
-    uint32_t tmp = kClientRate * (uint32_t)(kUpdateTime * 10);
-    outfile << "ProbeAttackerThrsh(s) " << tmp << std::endl;
-    outfile << "p3:AttackerProb(s) " << 0.5 << std::endl;
-    outfile << "DefendAttackerThrsh(s) " << 2 << std::endl;
+    outfile << "FlagValidTime(s) " << adhoc_nodes.Get(0)->GetFlagValidTime() << std::endl;
+    outfile << "SuspiciousValidTime(s) " << adhoc_nodes.Get(0)->GetSuspiciousValidTime() << std::endl;
+    outfile << "AttackerValidTime(s) " << adhoc_nodes.Get(0)->GetAttackerValidTime() << std::endl;
+    outfile << "ProbeAttackerThrsh(s) " << adhoc_nodes.Get(0)->GetProbeAttackerThrsh() << std::endl;
+    outfile << "p3:AttackerProb(s) " << adhoc_nodes.Get(0)->GetAttackerProb() << std::endl;
+    outfile << "DefendAttackerThrsh(s) " << adhoc_nodes.Get(0)->GetDefendAttackerThrsh() << std::endl;
 
+    outfile << "======client======" << std::endl;
     for (auto x : V) outfile << MP[adhoc_ipv4.GetAddress(x)] << std::endl;
+
+    outfile << "======total=======" << std::endl;
+    outfile << "average delay: " << avg_delay << std::endl;
+    outfile << "average jitter: " << avg_jitter << std::endl;
+    outfile << "average throughput: " << avg_throughput << " Kbps" << std::endl;
     outfile << "Ip layer total receive/send: " << 100. * rxcnt / txcnt << "%"
             << std::endl;
     outfile << "Socket total accept/send: " << 100. * cnt_recvnormalpacket / txcnt << "%" << std::endl;
     outfile << "App total accept/receive: " << 100. * cnt_recvnormalpacket / rxcnt << "%" << std::endl;
+    double tot_energy = 0;
+    for(auto iter = adhoc_device_energy_model.Begin(); iter != adhoc_device_energy_model.End(); iter++) {
+      double energyConsumed = (*iter)->GetTotalEnergyConsumption ();
+      tot_energy += energyConsumed;
+    }
+    outfile << "Total Energy Consumption: " << tot_energy << "J" << std::endl;
     outfile.close();
   }
 
@@ -428,26 +503,17 @@ int main(int argc, char *argv[]) {
 }
 
 void RecvNormal(Ptr<Socket> sock, double interval) {
-  NS_LOG_DEBUG(Now().GetSeconds() << ", Normal");
   std::cout << Now().GetSeconds() << "s, Normal" << std::endl;
   Address org_src;
   Ptr<Packet> packet;
   while (packet = sock->RecvFrom(org_src)) {
     InetSocketAddress inet_src = InetSocketAddress::ConvertFrom(org_src);
-    if (kAcceptCnt){
-      NS_LOG_DEBUG("received a normal packet from " << inet_src.GetIpv4() << " "
-                                                    << inet_src.GetPort());
-      std::cout << "received a normal packet from " << inet_src.GetIpv4() << " "
-                << inet_src.GetPort() << std::endl;
-      if (Sclientip.find(inet_src.GetIpv4()) != Sclientip.end()){
-        cnt_recvnormalpacket++;
-        MPclientcnt[inet_src.GetIpv4()]++;
-      }
+    std::cout << "received a normal packet from " << inet_src.GetIpv4() << " "
+              << inet_src.GetPort() << std::endl;
+    if (Sclientip.find(inet_src.GetIpv4()) != Sclientip.end()){
+      cnt_recvnormalpacket++;
+      MPclientcnt[inet_src.GetIpv4()]++;
     }
-  }
-  if (Now() - kAcceptTimeFlag > Seconds(0.8)){
-    kAcceptTimeFlag = Now();
-    kAcceptCnt = kAcceptPacket;
   }
   Simulator::Schedule(Seconds(interval), &RecvNormal, sock, interval);
 }

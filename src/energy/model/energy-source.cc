@@ -169,6 +169,8 @@ EnergySource::CalculateTotalCurrent (void)
     {
       totalCurrentA += (*i)->GetCurrentA ();
     }
+  NS_LOG_DEBUG ("EnergySource("<< GetNode ()->GetId () << "): Total Current = " << totalCurrentA);
+  // std::cout << "EnergySource("<< GetNode ()->GetId () << "): Total Current = " << totalCurrentA << std::endl;
   
   double totalHarvestedPower = 0.0;
   

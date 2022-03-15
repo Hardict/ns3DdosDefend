@@ -489,29 +489,6 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
       return false;
     }
 
-  NS_LOG_DEBUG("Ipv4Header " << header.GetSource() << " >> "
-                              << header.GetDestination());
-  auto node = idev->GetNode();
-  if (node->GetFlag() != Node::kNodeFlag::FLAG_NORMAL) {
-    // 节点状态有效时间判断 移至 node.cc
-    // if (Now() - node->GetTagSetTime() > node->GetTagValidTime()) {
-    // NS_LOG_DEBUG("node become normal because of exceed valid time.");
-    // node->SetTag(Node::NodeTag::TAG_NORMAL);
-    // } else 
-    auto src2dst = std::make_pair(header.GetSource(), header.GetDestination());
-    if (node->GetFlag() == Node::kNodeFlag::FLAG_PROBE && !node->IsAttacker(src2dst)){
-      node->AddAttacker(src2dst);
-      if (node->IsAttacker(src2dst))
-        m_sendDefendPacket(node, src2dst);
-    }
-    if (node->IsAttacker(src2dst)){
-      NS_LOG_INFO("Drop the packet in that the pair(src,dst) is attack path.");
-      if (node->CountDrop(src2dst))
-        m_sendDefendPacket(node, src2dst);
-      return true;
-    }
-  }
-
   // Broadcast local delivery/forwarding
   for (std::map<Ptr<Socket>, Ipv4InterfaceAddress>::const_iterator j =
          m_socketAddresses.begin (); j != m_socketAddresses.end (); ++j)
@@ -606,6 +583,31 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
       ecb (p, header, Socket::ERROR_NOROUTETOHOST);
       return true;
     }
+
+  
+  NS_LOG_DEBUG("Ipv4Header " << header.GetSource() << " >> "
+                              << header.GetDestination());
+  auto node = idev->GetNode();
+  if (node->GetFlag() != Node::kNodeFlag::FLAG_NORMAL) {
+    // 节点状态有效时间判断 移至 node.cc
+    auto src2dst = std::make_pair(header.GetSource(), header.GetDestination());
+    if (node->GetFlag() == Node::kNodeFlag::FLAG_PROBE && !node->IsAttacker(src2dst)){
+      node->AddAttacker(src2dst);
+      if (node->IsAttacker(src2dst))
+        m_sendDefendPacket(node, src2dst);
+    }
+    if (node->IsAttacker(src2dst)){
+      NS_LOG_INFO("Drop the packet in that the pair(src,dst) is attack path.");
+      m_queue.DropPacketWithSrc2Dst(src2dst.first, src2dst.second);
+      // if (node->CountDrop(src2dst)){
+      //   m_sendDefendPacket(node, src2dst);
+      //   // SendRerrWhenNoRouteToForward(src2dst.second, 0, src2dst.first); // 探测节点让其切换路由
+      // }
+      return true;
+    }
+  }
+
+
 
   // Forwarding
   return Forwarding(p, header, ucb, ecb);
@@ -1349,17 +1351,18 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
                          << " with origin " << origin);
 
   auto node = m_socketAddresses.begin()->first->GetNode();
-  NS_LOG_DEBUG("Node name: " << Names::FindName(node));
-  if (node->GetFlag() != Node::kNodeFlag::FLAG_NORMAL){
-    Ipv4Address origin = rreqHeader.GetOrigin();
-    Ipv4Address dst = rreqHeader.GetDst();
-    NS_LOG_DEBUG("origin: " << origin << " dst: " << dst);
-    std::pair<Ipv4Address, Ipv4Address> src2dst = std::make_pair(origin, dst);
-    if (node->IsAttacker(src2dst)){
-      NS_LOG_DEBUG("Drop RREQ packet in that node filter");
-      return;
-    }
-  }
+  // NS_LOG_DEBUG("Node name: " << Names::FindName(node));
+  // if (node->GetFlag() == Node::kNodeFlag::FLAG_PROBE){
+  //   Ipv4Address origin = rreqHeader.GetOrigin();
+  //   Ipv4Address dst = rreqHeader.GetDst();
+  //   NS_LOG_DEBUG("origin: " << origin << " dst: " << dst);
+  //   std::pair<Ipv4Address, Ipv4Address> src2dst = std::make_pair(origin, dst);
+  //   if (node->IsAttacker(src2dst)){
+  //     m_queue.DropPacketWithSrc2Dst(src2dst.first, src2dst.second);
+  //     NS_LOG_DEBUG("Drop RREQ packet in that node filter");
+  //     return;
+  //   }
+  // }
 
   //  A node generates a RREP if either:
   //  (i)  it is itself the destination,
@@ -1619,17 +1622,18 @@ RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sen
   NS_LOG_LOGIC ("receiver " << receiver << " origin " << rrepHeader.GetOrigin ());
 
   auto node = m_socketAddresses.begin()->first->GetNode();
-  NS_LOG_DEBUG("Node name: " << Names::FindName(node));
-  if (node->GetFlag() != Node::kNodeFlag::FLAG_NORMAL){
-    Ipv4Address origin = rrepHeader.GetOrigin();
-    Ipv4Address dst = rrepHeader.GetDst();
-    NS_LOG_DEBUG("origin: " << origin << " dst: " << dst);
-    std::pair<Ipv4Address, Ipv4Address> src2dst = std::make_pair(origin, dst);
-    if (node->IsAttacker(src2dst)){
-      NS_LOG_DEBUG("Drop RREP packet in that node filter");
-      return;
-    }
-  }
+  // NS_LOG_DEBUG("Node name: " << Names::FindName(node));
+  // if (node->GetFlag() == Node::kNodeFlag::FLAG_PROBE){
+  //   Ipv4Address origin = rrepHeader.GetOrigin();
+  //   Ipv4Address dst = rrepHeader.GetDst();
+  //   NS_LOG_DEBUG("origin: " << origin << " dst: " << dst);
+  //   std::pair<Ipv4Address, Ipv4Address> src2dst = std::make_pair(origin, dst);
+  //   if (node->IsAttacker(src2dst)){
+  //     m_queue.DropPacketWithSrc2Dst(src2dst.first, src2dst.second);
+  //     NS_LOG_DEBUG("Drop RREP packet in that node filter");
+  //     return;
+  //   }
+  // }
 
   if (IsMyOwnAddress (rrepHeader.GetOrigin ()))
     {

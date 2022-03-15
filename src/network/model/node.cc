@@ -279,13 +279,22 @@ Time Node::GetAttackerValidTime(){
   return m_attacker_validtime;
 }
 
+uint32_t Node::QueryDropN(std::pair<Ipv4Address, Ipv4Address> src2dst){
+  NS_LOG_FUNCTION(this);
+  return m_countdrops[src2dst].first;
+}
+
 bool Node::CountDrop(std::pair<Ipv4Address, Ipv4Address> src2dst) {
   NS_LOG_FUNCTION(this);
-  m_countdrops[src2dst]++;
+  m_countdrops[src2dst].first++;
   if (GetFlag() == kNodeFlag::FLAG_PROBE) {
     m_attackers[src2dst].second++;
-    if (m_attackers[src2dst].second >= m_probe_resend_thrsh){
+    uint32_t k = m_countdrops[src2dst].second;
+    if (k > 4) k = 4;
+    k = 1 << k;
+    if (m_attackers[src2dst].second >= m_probe_resend_thrsh * k){
       m_attackers[src2dst].second = 0;
+      m_countdrops[src2dst].second++;
       return true;
     }
   }
