@@ -155,6 +155,18 @@ public:
   static Ipv6Address MakeAutoconfiguredAddress (Address addr, Ipv6Address prefix);
 
   /**
+   * \brief Make the autoconfigured IPv6 address from a Mac address.
+   *
+   * Actually the MAC supported are: Mac8, Mac16, Mac48, and Mac64.
+   *
+   * \param addr the MAC address.
+   * \param prefix the IPv6 prefix
+   * \return autoconfigured IPv6 address
+   */
+
+  static Ipv6Address MakeAutoconfiguredAddress (Address addr, Ipv6Prefix prefix);
+
+  /**
    * \brief Make the autoconfigured IPv6 address with Mac16Address.
    *
    * The EUI-64 scheme used is based on the \RFC{4944}.
@@ -394,7 +406,6 @@ public:
   /**
    * \brief Get the bytes corresponding to the address.
    * \param buf buffer to store the data
-   * \return bytes of the address
    */
   void GetBytes (uint8_t buf[16]) const;
 
@@ -531,6 +542,12 @@ public:
    * \param buf buffer to store the data
    */
   void GetBytes (uint8_t buf[16]) const;
+
+  /**
+   * \brief Convert the Prefix into an IPv6 Address.
+   * \return an IPv6 address representing the prefix
+   */
+  Ipv6Address ConvertToIpv6Address () const;
 
   /**
    * \brief Get prefix length.
@@ -685,11 +702,11 @@ inline bool operator != (const Ipv6Prefix& a, const Ipv6Prefix& b)
  * \class Ipv6AddressHash
  * \brief Hash function class for IPv6 addresses.
  */
-class Ipv6AddressHash : public std::unary_function<Ipv6Address, size_t>
+class Ipv6AddressHash
 {
 public:
   /**
-   * \brief Unary operator to hash IPv6 address.
+   * \brief Returns the hash of an IPv6 address.
    * \param x IPv6 address to hash
    * \returns the hash of the address
    */

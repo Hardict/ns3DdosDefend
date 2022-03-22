@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
 
   AodvHelper aodv;
   // aodv.Set("HelloInterval", TimeValue(Seconds(999.)));
-  aodv.Set("MaxQueueLen", UintegerValue(std::numeric_limits<int32_t>::max()));
+  // aodv.Set("MaxQueueLen", UintegerValue(std::numeric_limits<int32_t>::max()));
   // aodv.Set("ActiveRouteTimeout", TimeValue(Seconds(0.5)));
   // aodv.Set("DeletePeriod", TimeValue(Seconds(1)));
   Ipv4StaticRoutingHelper static_routing; // 给自身发包
@@ -267,12 +267,15 @@ int main(int argc, char *argv[]) {
   internet.Install(adhoc_nodes);
 
   /** Energy Model **/
-  BasicEnergySourceHelper basicSourceHelper;
-  basicSourceHelper.Set("BasicEnergySourceInitialEnergyJ", DoubleValue(50000.0));// configure energy source for StaNodes
-  EnergySourceContainer sources = basicSourceHelper.Install(adhoc_nodes);
-  WifiRadioEnergyModelHelper radioEnergyHelper;
-  radioEnergyHelper.Set ("IdleCurrentA", DoubleValue (0.1));
-  DeviceEnergyModelContainer adhoc_device_energy_model = radioEnergyHelper.Install(adhoc_devices, sources); // install device model
+  // BasicEnergySourceHelper basicSourceHelper;
+  // basicSourceHelper.Set("BasicEnergySourceInitialEnergyJ", DoubleValue(5000.0));// configure energy source for StaNodes
+  // // basicSourceHelper.Set("BasicEnergySupplyVoltageV", DoubleValue(3.0));
+  // EnergySourceContainer sources = basicSourceHelper.Install(adhoc_nodes);
+  // WifiRadioEnergyModelHelper radioEnergyHelper;
+  // radioEnergyHelper.Set ("IdleCurrentA", DoubleValue (0.1));
+  // radioEnergyHelper.Set ("TxCurrentA", DoubleValue (0.5));
+  // radioEnergyHelper.Set ("RxCurrentA", DoubleValue (0.5));
+  // DeviceEnergyModelContainer adhoc_device_energy_model = radioEnergyHelper.Install(adhoc_devices, sources); // install device model
 
   // 在aodv协议中绑定防御包发送
   for (uint32_t i = 0; i < nAdHocNum; i++) {
@@ -407,7 +410,7 @@ int main(int argc, char *argv[]) {
     // flowMonitor->SerializeToXmlFile("./rgg2_test.flowmon",true,true);
 
     // flowmonfile_simple << "./rgg2data/vary_p1_3_morenode/log_" << stime << ".out";
-    flowmonfile_simple << "./rgg2data/vary_p1_energy/log_" << nOutFileId << "_p1_"
+    flowmonfile_simple << "./rgg2data/energy/log_" << nOutFileId << "_p1_"
                        << std::setiosflags(ios::fixed) << kProbProbeContinue << ".out";
     // flowmonfile_simple << "./rgg2data/vary_p2_3_test/log_" << nOutFileId << "_p2_"
     //                    << std::setiosflags(ios::fixed) << kProbDefendContinue << ".out";
@@ -481,17 +484,18 @@ int main(int argc, char *argv[]) {
     outfile << "======total=======" << std::endl;
     outfile << "average delay: " << avg_delay << std::endl;
     outfile << "average jitter: " << avg_jitter << std::endl;
+    avg_throughput *= 1.0 * cnt_recvnormalpacket / rxcnt;
     outfile << "average throughput: " << avg_throughput << " Kbps" << std::endl;
     outfile << "Ip layer total receive/send: " << 100. * rxcnt / txcnt << "%"
             << std::endl;
     outfile << "Socket total accept/send: " << 100. * cnt_recvnormalpacket / txcnt << "%" << std::endl;
     outfile << "App total accept/receive: " << 100. * cnt_recvnormalpacket / rxcnt << "%" << std::endl;
-    double tot_energy = 0;
-    for(auto iter = adhoc_device_energy_model.Begin(); iter != adhoc_device_energy_model.End(); iter++) {
-      double energyConsumed = (*iter)->GetTotalEnergyConsumption ();
-      tot_energy += energyConsumed;
-    }
-    outfile << "Total Energy Consumption: " << tot_energy << "J" << std::endl;
+    // double tot_energy = 0;
+    // for(auto iter = adhoc_device_energy_model.Begin(); iter != adhoc_device_energy_model.End(); iter++) {
+    //   double energyConsumed = (*iter)->GetTotalEnergyConsumption ();
+    //   tot_energy += energyConsumed;
+    // }
+    // outfile << "Total Energy Consumption: " << tot_energy << "J" << std::endl;
     outfile.close();
   }
 

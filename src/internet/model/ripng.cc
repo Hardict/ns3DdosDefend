@@ -473,10 +473,11 @@ void RipNg::PrintRoutingTable (Ptr<OutputStreamWrapper> stream, Time::Unit unit)
   NS_LOG_FUNCTION (this << stream);
 
   std::ostream* os = stream->GetStream ();
+  *os << std::resetiosflags (std::ios::adjustfield) << std::setiosflags (std::ios::left);
 
   *os << "Node: " << m_ipv6->GetObject<Node> ()->GetId ()
       << ", Time: " << Now().As (unit)
-      << ", Local time: " << GetObject<Node> ()->GetLocalTime ().As (unit)
+      << ", Local time: " << m_ipv6->GetObject<Node> ()->GetLocalTime ().As (unit)
       << ", IPv6 RIPng table" << std::endl;
 
   if (!m_routes.empty ())
@@ -492,9 +493,9 @@ void RipNg::PrintRoutingTable (Ptr<OutputStreamWrapper> stream, Time::Unit unit)
               std::ostringstream dest, gw, mask, flags;
 
               dest << route->GetDest () << "/" << int(route->GetDestNetworkPrefix ().GetPrefixLength ());
-              *os << std::setiosflags (std::ios::left) << std::setw (31) << dest.str ();
+              *os << std::setw (31) << dest.str ();
               gw << route->GetGateway ();
-              *os << std::setiosflags (std::ios::left) << std::setw (27) << gw.str ();
+              *os << std::setw (27) << gw.str ();
               flags << "U";
               if (route->IsHost ())
                 {
@@ -504,8 +505,8 @@ void RipNg::PrintRoutingTable (Ptr<OutputStreamWrapper> stream, Time::Unit unit)
                 {
                   flags << "G";
                 }
-              *os << std::setiosflags (std::ios::left) << std::setw (5) << flags.str ();
-              *os << std::setiosflags (std::ios::left) << std::setw (4) << int(route->GetRouteMetric ());
+              *os << std::setw (5) << flags.str ();
+              *os << std::setw (4) << int(route->GetRouteMetric ());
               // Ref ct not implemented
               *os << "-" << "   ";
               // Use not implemented

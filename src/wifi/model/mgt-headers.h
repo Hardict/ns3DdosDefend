@@ -28,17 +28,16 @@
 #include "capability-information.h"
 #include "supported-rates.h"
 #include "ssid.h"
-#include "dsss-parameter-set.h"
+#include "ns3/dsss-parameter-set.h"
 #include "extended-capabilities.h"
-#include "ht-capabilities.h"
-#include "ht-operation.h"
-#include "vht-capabilities.h"
-#include "vht-operation.h"
-#include "erp-information.h"
+#include "ns3/ht-capabilities.h"
+#include "ns3/ht-operation.h"
+#include "ns3/vht-capabilities.h"
+#include "ns3/vht-operation.h"
+#include "ns3/erp-information.h"
 #include "edca-parameter-set.h"
-#include "he-capabilities.h"
-#include "he-operation.h"
-#include "cf-parameter-set.h"
+#include "ns3/he-capabilities.h"
+#include "ns3/he-operation.h"
 
 namespace ns3 {
 
@@ -154,11 +153,12 @@ public:
    * \return The TypeId.
    */
   static TypeId GetTypeId (void);
-  TypeId GetInstanceTypeId (void) const;
-  void Print (std::ostream &os) const;
-  uint32_t GetSerializedSize (void) const;
-  void Serialize (Buffer::Iterator start) const;
-  uint32_t Deserialize (Buffer::Iterator start);
+
+  TypeId GetInstanceTypeId (void) const override;
+  void Print (std::ostream &os) const override;
+  uint32_t GetSerializedSize (void) const override;
+  void Serialize (Buffer::Iterator start) const override;
+  uint32_t Deserialize (Buffer::Iterator start) override;
 
 
 private:
@@ -706,12 +706,6 @@ public:
    */
   EdcaParameterSet GetEdcaParameterSet (void) const;
   /**
-   * Return the CF parameter set.
-   *
-   * \return CF parameter set
-   */
-  CfParameterSet GetCfParameterSet (void) const;
-  /**
    * Set the Capability information.
    *
    * \param capabilities Capability information
@@ -796,12 +790,6 @@ public:
    */
   void SetEdcaParameterSet (EdcaParameterSet edcaParameterSet);
   /**
-   * Set the CF parameter set.
-   *
-   * \param cfParameterSet CF parameter set
-   */
-  void SetCfParameterSet (CfParameterSet cfParameterSet);
-  /**
    * Return the time stamp.
    *
    * \return time stamp
@@ -836,7 +824,6 @@ private:
   HeOperation m_heOperation;         //!< HE operation
   ErpInformation m_erpInformation;     //!< ERP information
   EdcaParameterSet m_edcaParameterSet; //!< EDCA Parameter Set
-  CfParameterSet m_cfParameterSet;     //!< CF parameter set
 };
 
 
@@ -1263,7 +1250,7 @@ public:
    * \return The TypeId.
    */
   static TypeId GetTypeId (void);
-  // Inherited
+
   TypeId GetInstanceTypeId (void) const;
   void Print (std::ostream &os) const;
   uint32_t GetSerializedSize (void) const;

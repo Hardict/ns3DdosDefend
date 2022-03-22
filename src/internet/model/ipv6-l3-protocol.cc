@@ -310,9 +310,21 @@ void Ipv6L3Protocol::AddAutoconfiguredAddress (uint32_t interface, Ipv6Address n
 
   Address addr = GetInterface (interface)->GetDevice ()->GetAddress ();
 
-  if (flags & (1 << 6)) /* auto flag */
+  if (!defaultRouter.IsAny())
+    {
+      GetRoutingProtocol ()->NotifyAddRoute (Ipv6Address::GetAny (), Ipv6Prefix ((uint8_t)0), defaultRouter, interface, network);
+    }
+
+  bool onLink = false;
+  if (flags & Icmpv6OptionPrefixInformation::ONLINK)
+    {
+      onLink = true;
+    }
+
+  if (flags & Icmpv6OptionPrefixInformation::AUTADDRCONF) /* auto flag */
     {
       address = Ipv6Address::MakeAutoconfiguredAddress (addr, network);
+      address.SetOnLink (onLink);
 
       /* see if we have already the prefix */
       for (Ipv6AutoconfiguredPrefixListI it = m_prefixes.begin (); it != m_prefixes.end (); ++it)
@@ -328,20 +340,20 @@ void Ipv6L3Protocol::AddAutoconfiguredAddress (uint32_t interface, Ipv6Address n
 
       /* no prefix found, add autoconfigured address and the prefix */
       NS_LOG_INFO ("Autoconfigured address is :" << address.GetAddress ());
-      AddAddress (interface, address);
-
-      /* add default router
-       * if a previous default route exists, the new ones is simply added
-       */
-      if (!defaultRouter.IsAny())
-        {
-          GetRoutingProtocol ()->NotifyAddRoute (Ipv6Address::GetAny (), Ipv6Prefix ((uint8_t)0), defaultRouter, interface, network);
-        }
+      AddAddress (interface, address, onLink);
 
       Ptr<Ipv6AutoconfiguredPrefix> aPrefix = CreateObject<Ipv6AutoconfiguredPrefix> (m_node, interface, network, mask, preferredTime, validTime, defaultRouter);
       aPrefix->StartPreferredTimer ();
 
       m_prefixes.push_back (aPrefix);
+    }
+
+  if (onLink) /* on-link flag */
+    {
+      /* add default router
+       * if a previous default route exists, the new ones is simply added
+       */
+      m_routingProtocol->NotifyAddRoute (network, mask, Ipv6Address::GetAny (), interface);
     }
 }
 
@@ -376,15 +388,23 @@ void Ipv6L3Protocol::RemoveAutoconfiguredAddress (uint32_t interface, Ipv6Addres
   GetRoutingProtocol ()->NotifyRemoveRoute (Ipv6Address::GetAny (), Ipv6Prefix ((uint8_t)0), defaultRouter, interface, network);
 }
 
-bool Ipv6L3Protocol::AddAddress (uint32_t i, Ipv6InterfaceAddress address)
+bool Ipv6L3Protocol::AddAddress (uint32_t i, Ipv6InterfaceAddress address, bool addOnLinkRoute)
 {
   NS_LOG_FUNCTION (this << i << address);
   Ptr<Ipv6Interface> interface = GetInterface (i);
+  address.SetOnLink (addOnLinkRoute);
   bool ret = interface->AddAddress (address);
 
   if (m_routingProtocol != 0)
     {
       m_routingProtocol->NotifyAddAddress (i, address);
+    }
+
+  if (addOnLinkRoute)
+    {
+      Ipv6Address networkAddress = address.GetAddress ().CombinePrefix (address.GetPrefix ());
+      Ipv6Prefix networkMask = address.GetPrefix ();
+      GetRoutingProtocol ()->NotifyAddRoute (networkAddress, networkMask, Ipv6Address::GetZero (), i);
     }
   return ret;
 }
@@ -1578,6 +1598,55 @@ bool Ipv6L3Protocol::IsRegisteredMulticastAddress (Ipv6Address address) const
     {
       return false;
     }
+  return true;
+}
+
+bool Ipv6L3Protocol::ReachabilityHint (uint32_t ipInterfaceIndex, Ipv6Address address)
+{
+  if (ipInterfaceIndex >= m_interfaces.size ())
+    {
+      return false;
+    }
+
+  Ptr<NdiscCache> ndiscCache = m_interfaces[ipInterfaceIndex]->GetNdiscCache ();
+  if (!ndiscCache)
+    {
+      return false;
+    }
+
+  NdiscCache::Entry* entry = ndiscCache->Lookup (address);
+  if (!entry || entry->IsIncomplete ())
+    {
+      return false;
+    }
+
+
+  if (entry->IsReachable ())
+    {
+      entry->UpdateReachableTimer ();
+    }
+  else if (entry->IsPermanent ())
+    {
+      return true;
+    }
+  else if (entry->IsProbe ())
+    {
+      // we just confirm the entry's MAC address to get the waiting packets (if any)
+      std::list<NdiscCache::Ipv6PayloadHeaderPair> waiting = entry->MarkReachable (entry->GetMacAddress ());
+      for (std::list<NdiscCache::Ipv6PayloadHeaderPair>::const_iterator it = waiting.begin (); it != waiting.end (); it++)
+        {
+          ndiscCache->GetInterface ()->Send (it->first, it->second, it->second.GetSourceAddress ());
+        }
+      entry->ClearWaitingPacket ();
+      entry->StartReachableTimer ();
+    }
+  else // STALE OR DELAY
+    {
+      entry->MarkReachable ();
+      entry->StartReachableTimer ();
+    }
+
+
   return true;
 }
 

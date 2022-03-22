@@ -1,0 +1,817 @@
+Waf: Entering directory `/home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build'
+Waf: Leaving directory `/home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build'
+Build commands will be stored in build/compile_commands.json
+'build' finished successfully (1.282s)
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/scratch/rgg2...
+(No debugging symbols found in /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/scratch/rgg2)
+(gdb) rubnrun
+Undefined command: "rubnrun".  Try "help".
+(gdb) run
+Starting program: /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/scratch/rgg2 --nAdHocNum=80 --nNs3Seed=6 --nSrandSeed=6 --nOutFileId=4 --kProbProbeContinue=56 --kProbDefendContinue=50 --kProbeTtl=2 --kDefendTtl=3 --kPacketSize=1024 --kServerRate=20 --kAttackerRate=80
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+Program received signal SIGINT, Interrupt.
+0x00007ffff7fd37a5 in ?? () from /lib64/ld-linux-x86-64.so.2
+(gdb) 
+(gdb) run
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/scratch/rgg2 --nAdHocNum=80 --nNs3Seed=6 --nSrandSeed=6 --nOutFileId=4 --kProbProbeContinue=56 --kProbDefendContinue=50 --kProbeTtl=2 --kDefendTtl=3 --kPacketSize=1024 --kServerRate=20 --kAttackerRate=80
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+Start
+1e-09s, Normal
+0.5s, Normal
+1s, Normal
+1.5s, Normal
+2s, Normal
+2.5s, Normal
+3s, Normal
+3.5s, Normal
+4s, Normal
+4.5s, Normal
+5s, Normal
+5.5s, Normal
+6s, Normal
+6.5s, Normal
+7s, Normal
+7.5s, Normal
+8s, Normal
+8.5s, Normal
+9s, Normal
+9.5s, Normal
+10s, Normal
+10.5s, Normal
+11s, Normal
+11.5s, Normal
+12s, Normal
+12.5s, Normal
+13s, Normal
+13.5s, Normal
+14s, Normal
+14.5s, Normal
+15s, Normal
+15.5s, Normal
+16s, Normal
+16.5s, Normal
+17s, Normal
+17.5s, Normal
+18s, Normal
+18.5s, Normal
+19s, Normal
+19.5s, Normal
+20s, Normal
+20.5s, Normal
+21s, Normal
+21.5s, Normal
+22s, Normal
+22.5s, Normal
+23s, Normal
+23.5s, Normal
+24s, Normal
+24.5s, Normal
+25s, Normal
+25.5s, Normal
+26s, Normal
+26.5s, Normal
+27s, Normal
+27.5s, Normal
+28s, Normal
+28.5s, Normal
+29s, Normal
+29.5s, Normal
+30s, Normal
+30.5s, Normal
++3.1e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
+31s, Normal
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
++3.15e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
+31.5s, Normal
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
++3.2e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
+32s, Normal
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
++3.25e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.25e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
+32.5s, Normal
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+node-62: send defend packet
+10.1.1.4>>>10.1.1.1
++3.3e+10ns, suspicious path: 10.1.1.2 >> 10.1.1.1
++3.3e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.3e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
++3.3e+10ns, suspicious path: 10.1.1.12 >> 10.1.1.1
+33s, Normal
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.3 49153
++3.35e+10ns, suspicious path: 10.1.1.2 >> 10.1.1.1
++3.35e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.35e+10ns, suspicious path: 10.1.1.5 >> 10.1.1.1
++3.35e+10ns, suspicious path: 10.1.1.7 >> 10.1.1.1
++3.35e+10ns, suspicious path: 10.1.1.10 >> 10.1.1.1
++3.35e+10ns, suspicious path: 10.1.1.12 >> 10.1.1.1
+33.5s, Normal
+received a normal packet from 10.1.1.2 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.2 49153
+received a normal packet from 10.1.1.2 49153
+received a normal packet from 10.1.1.2 49153
+received a normal packet from 10.1.1.2 49153
+received a normal packet from 10.1.1.2 49153
++3.4e+10ns, suspicious path: 10.1.1.2 >> 10.1.1.1
++3.4e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.4e+10ns, suspicious path: 10.1.1.5 >> 10.1.1.1
++3.4e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
+34s, Normal
+received a normal packet from 10.1.1.2 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.2 49153
+received a normal packet from 10.1.1.2 49153
+received a normal packet from 10.1.1.2 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.2 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.2 49153
++3.45e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.45e+10ns, suspicious path: 10.1.1.5 >> 10.1.1.1
++3.45e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
++3.45e+10ns, suspicious path: 10.1.1.9 >> 10.1.1.1
++3.45e+10ns, suspicious path: 10.1.1.13 >> 10.1.1.1
++3.45e+10ns, suspicious path: 10.1.1.14 >> 10.1.1.1
+34.5s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.3 49153
+node-42: send defend packet
+10.1.1.2>>>10.1.1.1
+node-38: send defend packet
+10.1.1.5>>>10.1.1.1
++3.5e+10ns, suspicious path: 10.1.1.2 >> 10.1.1.1
++3.5e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.5e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
++3.5e+10ns, suspicious path: 10.1.1.5 >> 10.1.1.1
++3.5e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
++3.5e+10ns, suspicious path: 10.1.1.9 >> 10.1.1.1
++3.5e+10ns, suspicious path: 10.1.1.14 >> 10.1.1.1
++3.5e+10ns, suspicious path: 10.1.1.15 >> 10.1.1.1
+35s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.5 49153
+received a normal packet from 10.1.1.5 49153
+node-19: send defend packet
+10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-74: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-8: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-20: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-33: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-9: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-67: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-52: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-18: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-21: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-41: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-29: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-72: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-5: 10.1.1.2>>>10.1.1.1
++3.55e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.55e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
++3.55e+10ns, suspicious path: 10.1.1.9 >> 10.1.1.1
++3.55e+10ns, suspicious path: 10.1.1.14 >> 10.1.1.1
++3.55e+10ns, suspicious path: 10.1.1.15 >> 10.1.1.1
+35.5s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.4 49153
+node-38: send defend packet
+10.1.1.4>>>10.1.1.1
+=======!!!!!!!=======
+node-45: 10.1.1.4>>>10.1.1.1
+=======!!!!!!!=======
+node-75: 10.1.1.2>>>10.1.1.1
+=======!!!!!!!=======
+node-17: 10.1.1.2>>>10.1.1.1
++3.6e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.6e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
++3.6e+10ns, suspicious path: 10.1.1.15 >> 10.1.1.1
+36s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
++3.65e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.65e+10ns, suspicious path: 10.1.1.6 >> 10.1.1.1
+36.5s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
++3.7e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.7e+10ns, suspicious path: 10.1.1.6 >> 10.1.1.1
++3.7e+10ns, suspicious path: 10.1.1.10 >> 10.1.1.1
++3.7e+10ns, suspicious path: 10.1.1.12 >> 10.1.1.1
+37s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+node-13: send defend packet
+10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-7: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-45: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-37: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-28: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-68: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-12: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-70: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-64: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-43: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-14: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-20: 10.1.1.5>>>10.1.1.1
+=======!!!!!!!=======
+node-17: 10.1.1.5>>>10.1.1.1
++3.75e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.75e+10ns, suspicious path: 10.1.1.6 >> 10.1.1.1
++3.75e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
++3.75e+10ns, suspicious path: 10.1.1.10 >> 10.1.1.1
++3.75e+10ns, suspicious path: 10.1.1.12 >> 10.1.1.1
+37.5s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
++3.8e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.8e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
++3.8e+10ns, suspicious path: 10.1.1.10 >> 10.1.1.1
++3.8e+10ns, suspicious path: 10.1.1.12 >> 10.1.1.1
++3.8e+10ns, suspicious path: 10.1.1.14 >> 10.1.1.1
+38s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
++3.85e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.85e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
++3.85e+10ns, suspicious path: 10.1.1.10 >> 10.1.1.1
++3.85e+10ns, suspicious path: 10.1.1.12 >> 10.1.1.1
++3.85e+10ns, suspicious path: 10.1.1.13 >> 10.1.1.1
++3.85e+10ns, suspicious path: 10.1.1.14 >> 10.1.1.1
+38.5s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
++3.9e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.9e+10ns, suspicious path: 10.1.1.7 >> 10.1.1.1
++3.9e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
++3.9e+10ns, suspicious path: 10.1.1.11 >> 10.1.1.1
++3.9e+10ns, suspicious path: 10.1.1.13 >> 10.1.1.1
++3.9e+10ns, suspicious path: 10.1.1.14 >> 10.1.1.1
+39s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.11 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
++3.95e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++3.95e+10ns, suspicious path: 10.1.1.7 >> 10.1.1.1
++3.95e+10ns, suspicious path: 10.1.1.13 >> 10.1.1.1
++3.95e+10ns, suspicious path: 10.1.1.14 >> 10.1.1.1
++3.95e+10ns, suspicious path: 10.1.1.15 >> 10.1.1.1
+39.5s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
++4e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++4e+10ns, suspicious path: 10.1.1.6 >> 10.1.1.1
++4e+10ns, suspicious path: 10.1.1.7 >> 10.1.1.1
++4e+10ns, suspicious path: 10.1.1.9 >> 10.1.1.1
++4e+10ns, suspicious path: 10.1.1.13 >> 10.1.1.1
++4e+10ns, suspicious path: 10.1.1.15 >> 10.1.1.1
+40s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.9 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+node-8: send defend packet
+10.1.1.3>>>10.1.1.1
++4.05e+10ns, suspicious path: 10.1.1.3 >> 10.1.1.1
++4.05e+10ns, suspicious path: 10.1.1.6 >> 10.1.1.1
++4.05e+10ns, suspicious path: 10.1.1.7 >> 10.1.1.1
++4.05e+10ns, suspicious path: 10.1.1.9 >> 10.1.1.1
++4.05e+10ns, suspicious path: 10.1.1.15 >> 10.1.1.1
+40.5s, Normal
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.9 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+received a normal packet from 10.1.1.3 49153
+41s, Normal
+received a normal packet from 10.1.1.9 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.15 49153
+41.5s, Normal
+received a normal packet from 10.1.1.9 49153
+received a normal packet from 10.1.1.6 49153
+42s, Normal
+42.5s, Normal
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.12 49153
+43s, Normal
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.12 49153
+43.5s, Normal
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.12 49153
+44s, Normal
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.12 49153
+44.5s, Normal
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.6 49153
+45s, Normal
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.6 49153
+45.5s, Normal
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.9 49153
+46s, Normal
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.9 49153
+46.5s, Normal
+received a normal packet from 10.1.1.9 49153
+47s, Normal
+received a normal packet from 10.1.1.9 49153
+47.5s, Normal
+48s, Normal
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.12 49153
+48.5s, Normal
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.12 49153
+49s, Normal
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.12 49153
+received a normal packet from 10.1.1.11 49153
+received a normal packet from 10.1.1.10 49153
+49.5s, Normal
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.12 49153
+received a normal packet from 10.1.1.10 49153
+50s, Normal
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.10 49153
+50.5s, Normal
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.11 49153
+51s, Normal
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.9 49153
+51.5s, Normal
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.9 49153
+52s, Normal
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.9 49153
+52.5s, Normal
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.9 49153
+53s, Normal
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.14 49153
+53.5s, Normal
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.8 49153
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.12 49153
+54s, Normal
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.12 49153
+received a normal packet from 10.1.1.7 49153
+54.5s, Normal
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.12 49153
+received a normal packet from 10.1.1.7 49153
+55s, Normal
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.12 49153
+received a normal packet from 10.1.1.7 49153
+55.5s, Normal
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.9 49153
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.7 49153
+56s, Normal
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.9 49153
+received a normal packet from 10.1.1.13 49153
+56.5s, Normal
+received a normal packet from 10.1.1.9 49153
+received a normal packet from 10.1.1.13 49153
+57s, Normal
+received a normal packet from 10.1.1.9 49153
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.14 49153
+57.5s, Normal
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.8 49153
+58s, Normal
+received a normal packet from 10.1.1.12 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.8 49153
+58.5s, Normal
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.12 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.8 49153
+59s, Normal
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.12 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.8 49153
+59.5s, Normal
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.12 49153
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.9 49153
+60s, Normal
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.7 49153
+received a normal packet from 10.1.1.15 49153
+received a normal packet from 10.1.1.9 49153
+60.5s, Normal
+received a normal packet from 10.1.1.13 49153
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.9 49153
+received a normal packet from 10.1.1.13 49153
+61s, Normal
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.9 49153
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.13 49153
+61.5s, Normal
+received a normal packet from 10.1.1.10 49153
+received a normal packet from 10.1.1.14 49153
+received a normal packet from 10.1.1.13 49153
+62s, Normal
+received a normal packet from 10.1.1.6 49153
+received a normal packet from 10.1.1.14 49153
++6.25e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
++6.25e+10ns, suspicious path: 10.1.1.6 >> 10.1.1.1
++6.25e+10ns, suspicious path: 10.1.1.14 >> 10.1.1.1
+62.5s, Normal
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
++6.3e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
++6.3e+10ns, suspicious path: 10.1.1.6 >> 10.1.1.1
++6.3e+10ns, suspicious path: 10.1.1.7 >> 10.1.1.1
++6.3e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
+63s, Normal
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
++6.35e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
++6.35e+10ns, suspicious path: 10.1.1.6 >> 10.1.1.1
++6.35e+10ns, suspicious path: 10.1.1.7 >> 10.1.1.1
++6.35e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
++6.35e+10ns, suspicious path: 10.1.1.15 >> 10.1.1.1
+63.5s, Normal
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
++6.4e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
++6.4e+10ns, suspicious path: 10.1.1.7 >> 10.1.1.1
++6.4e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
++6.4e+10ns, suspicious path: 10.1.1.12 >> 10.1.1.1
++6.4e+10ns, suspicious path: 10.1.1.15 >> 10.1.1.1
+64s, Normal
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
++6.45e+10ns, suspicious path: 10.1.1.4 >> 10.1.1.1
++6.45e+10ns, suspicious path: 10.1.1.7 >> 10.1.1.1
++6.45e+10ns, suspicious path: 10.1.1.8 >> 10.1.1.1
++6.45e+10ns, suspicious path: 10.1.1.12 >> 10.1.1.1
++6.45e+10ns, suspicious path: 10.1.1.15 >> 10.1.1.1
+64.5s, Normal
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+received a normal packet from 10.1.1.4 49153
+
+Program received signal SIGSEGV, Segmentation fault.
+0x00007ffff2d1f213 in std::_Rb_tree_increment(std::_Rb_tree_node_base const*) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+(gdb) bacj[Kkt[H[2J(gdb) backt
+#0  0x00007ffff2d1f213 in std::_Rb_tree_increment(std::_Rb_tree_node_base const*) () at /lib/x86_64-linux-gnu/libstdc++.so.6
+#1  0x00007ffff47c8505 in std::_Rb_tree_const_iterator<std::pair<unsigned int, std::pair<ns3::Ipv4Address, ns3::Ipv4Address> > >::operator++() ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-network-optimized.so
+#2  0x00007ffff47c47df in ns3::Node::IsAttacker(std::pair<ns3::Ipv4Address, ns3::Ipv4Address>) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-network-optimized.so
+#3  0x00007ffff7f845bf in ns3::aodv::RoutingProtocol::RouteInput(ns3::Ptr<ns3::Packet const>, ns3::Ipv4Header const&, ns3::Ptr<ns3::NetDevice const>, ns3::Callback<void, ns3::Ptr<ns3::Ipv4Route>, ns3::Ptr<ns3::Packet const>, ns3::Ipv4Header const&, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>, ns3::Callback<void, ns3::Ptr<ns3::Ipv4MulticastRoute>, ns3::Ptr<ns3::Packet const>, ns3::Ipv4Header const&, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>, ns3::Callback<void, ns3::Ptr<ns3::Packet const>, ns3::Ipv4Header const&, unsigned int, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>, ns3::Callback<void, ns3::Ptr<ns3::Packet const>, ns3::Ipv4Header const&, ns3::Socket::SocketErrno, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>) () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-aodv-optimized.so
+#4  0x00007ffff571f148 in ns3::Ipv4ListRouting::RouteInput(ns3::Ptr<ns3::Packet const>, ns3::Ipv4Header const&, ns3::Ptr<ns3::NetDevice const>, ns3::Callback<void, ns3::Ptr<ns3::Ipv4Route>, ns3::Ptr<ns3::Packet const>, ns3::Ipv4Header const&, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>, ns3::Callback<void, ns3::Ptr<ns3::Ipv4MulticastRoute>, ns3::Ptr<ns3::Packet const>, ns3::Ipv4Header const&, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>, ns3::Callback<void, ns3::Ptr<ns3::Packet const>, ns3::Ipv4Header const&, unsigned int, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>, ns3::Callback<void, ns3::Ptr<ns3::Packet const>, ns3::Ipv4Header const&, ns3::Socket::SocketErrno, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>) () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-internet-optimized.so
+#5  0x00007ffff5578db0 in ns3::Ipv4L3Protocol::Receive(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType) () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-internet-optimized.so
+#6  0x00007ffff559f837 in ns3::MemPtrCallbackImpl<ns3::Ipv4L3Protocol*, void (ns3::Ipv4L3Protocol::*)(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType), void, ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-internet-optimized.so
+#7  0x00007ffff50a54d2 in ns3::Callback<void, ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType) const ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-traffic-control-optimized.so
+#8  0x00007ffff50a2581 in ns3::TrafficControlLayer::Receive(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType) () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-traffic-control-optimized.so
+#9  0x00007ffff559f5a0 in ns3::MemPtrCallbackImpl<ns3::Ptr<ns3::TrafficControlLayer>, void (ns3::TrafficControlLayer::*)(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType), void, ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-internet-optimized.so
+#10 0x00007ffff50a54d2 in ns3::Callback<void, ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType) const ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-traffic-control-optimized.so
+#11 0x00007ffff47c5db0 in ns3::Node::ReceiveFromDevice(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::Address const&, ns3::NetDevice::PacketType, bool) () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-network-optimized.so
+#12 0x00007ffff47c5b44 in ns3::Node::NonPromiscReceiveFromDevice(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&)
+    () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-network-optimized.so
+#13 0x00007ffff47d6680 in ns3::MemPtrCallbackImpl<ns3::Node*, bool (ns3::Node::*)(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&), bool, ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-network-optimized.so
+#14 0x00007ffff7c27285 in ns3::Callback<bool, ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::NetDevice>, ns3::Ptr<ns3::Packet const>, unsigned short, ns3::Address const&) const ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-mesh-optimized.so
+#15 0x00007ffff76f1690 in ns3::WifiNetDevice::ForwardUp(ns3::Ptr<ns3::Packet const>, ns3::Mac48Address, ns3::Mac48Address) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#16 0x00007ffff76f8502 in ns3::MemPtrCallbackImpl<ns3::WifiNetDevice*, void (ns3::WifiNetDevice::*)(ns3::Ptr<ns3::Packet const>, ns3::Mac48Address, ns3::Mac48Address), void, ns3::Ptr<ns3::Packet const>, ns3::Mac48Address, ns3::Mac48Address, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::Packet const>, ns3::Mac48Address, ns3::Mac48Address) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#17 0x00007ffff76b22f7 in ns3::Callback<void, ns3::Ptr<ns3::Packet const>, ns3::Mac48Address, ns3::Mac48Address, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::Packet const>, ns3::Mac48Address, ns3::Mac48Address) const ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#18 0x00007ffff76ab1bf in ns3::RegularWifiMac::ForwardUp(ns3::Ptr<ns3::Packet const>, ns3::Mac48Address, ns3::Mac48Address) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#19 0x00007ffff76edfd5 in ns3::AdhocWifiMac::Receive(ns3::Ptr<ns3::WifiMacQueueItem>) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#20 0x00007ffff76ba7b4 in ns3::MemPtrCallbackImpl<ns3::RegularWifiMac*, void (ns3::RegularWifiMac::*)(ns3::Ptr<ns3::WifiMacQueueItem>), void, ns3::Ptr<ns3::WifiMacQueueItem>, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::WifiMacQueueItem>)
+    () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#21 0x00007ffff7662fa9 in ns3::Callback<void, ns3::Ptr<ns3::WifiMacQueueItem>, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::WifiMacQueueItem>) const () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#22 0x00007ffff767c673 in ns3::MacRxMiddle::Receive(ns3::Ptr<ns3::WifiMacQueueItem>) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#23 0x00007ffff79a7f4b in ns3::MemPtrCallbackImpl<ns3::Ptr<ns3::MacRxMiddle>, void (ns3::MacRxMiddle::*)(ns3::Ptr<ns3::WifiMacQueueItem>), void, ns3::Ptr<ns3::WifiMacQueueItem>, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::WifiMacQueueItem>) () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wave-optimized.so
+#24 0x00007ffff7662fa9 in ns3::Callback<void, ns3::Ptr<ns3::WifiMacQueueItem>, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::WifiMacQueueItem>) const () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#25 0x00007ffff7652c65 in ns3::MacLow::ReceiveOk(ns3::Ptr<ns3::WifiMacQueueItem>, double, ns3::WifiTxVector, bool) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#26 0x00007ffff765f8b9 in ns3::MacLow::DeaggregateAmpduAndReceive(ns3::Ptr<ns3::WifiPsdu>, double, ns3::WifiTxVector, std::vector<bool, std::allocator<bool> >) () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#27 0x00007ffff766d6c8 in ns3::MemPtrCallbackImpl<ns3::MacLow*, void (ns3::MacLow::*)(ns3::Ptr<ns3::WifiPsdu>, double, ns3::WifiTxVector, std::vector<bool, std::allocator<bool> >), void, ns3::Ptr<ns3::WifiPsdu>, double, ns3::WifiTxVector, std::vector<bool, std::allocator<bool> >, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::WifiPsdu>, double, ns3::WifiTxVector, std::vector<bool, std::allocator<bool> >) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#28 0x00007ffff76125fa in ns3::Callback<void, ns3::Ptr<ns3::WifiPsdu>, double, ns3::WifiTxVector, std::vector<bool, std::allocator<bool> >, ns3::empty, ns3::empty, ns3::empty, ns3::empty, ns3::empty>::operator()(ns3::Ptr<ns3::WifiPsdu>, double, ns3::WifiTxVector, std::vector<bool, std::allocator<bool> >) const ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#29 0x00007ffff760ff40 in ns3::WifiPhyStateHelper::SwitchFromRxEndOk(ns3::Ptr<ns3::WifiPsdu>, double, ns3::WifiTxVector, unsigned short, std::vector<bool, std::allocator<bool> >) () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#30 0x00007ffff75c5846 in ns3::WifiPhy::EndReceive(ns3::Ptr<ns3::Event>) ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#31 0x00007ffff75dfecc in ns3::MakeEvent<void (ns3::WifiPhy::*)(ns3::Ptr<ns3::Event>), ns3::WifiPhy*, ns3::Ptr<ns3::Event> >(void (ns3::WifiPhy::*)(ns3::Ptr<ns3::Event>), ns3::WifiPhy*, ns3::Ptr<ns3::Event>)::EventMemberImpl1::Notify() ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-wifi-optimized.so
+#32 0x00007ffff444fd3b in ns3::EventImpl::Invoke() () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-core-optimized.so
+#33 0x00007ffff4453087 in ns3::DefaultSimulatorImpl::ProcessOneEvent() ()
+    at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-core-optimized.so
+#34 0x00007ffff4453346 in ns3::DefaultSimulatorImpl::Run() () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-core-optimized.so
+#35 0x00007ffff44503d4 in ns3::Simulator::Run() () at /home/Hardict/ns3/ns-3-allinone-master/ns-3.33/build/lib/libns3.33-core-optimized.so
+#36 0x000055555558aaa3 in main ()
+(gdb) [K(gdb) [K(gdb) [K(gdb) [K(gdb) [K(gdb) [K(gdb) [K(gdb) [K(gdb) [K(gdb) quit
+A debugging session is active.
+
+	Inferior 1 [process 22792] will be killed.
+
+Quit anyway? (y or n) y

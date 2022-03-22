@@ -31,6 +31,7 @@
 #include "ns3/assert.h"
 #include "ns3/global-value.h"
 #include "ns3/boolean.h"
+#include <algorithm>
 
 namespace ns3 {
 
@@ -158,8 +159,8 @@ uint32_t Node::GetFlag(void){
       Now() - GetFlagSetTime() > GetFlagValidTime()) {
     NS_LOG_INFO("node become normal because of exceed valid time.");
     SetFlag(kNodeFlag::FLAG_NORMAL);
-    std::map<uint32_t, Time>().swap(m_received_pids);
-    // m_received_pids.clear();
+    // std::map<uint32_t, Time>().swap(m_received_pids);
+    m_received_pids.clear();
     m_received_defendinfos.clear();
     m_suspects.clear();
     m_attackers.clear();
@@ -338,9 +339,20 @@ bool Node::IsAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst) {
   if (Now() - tim > m_suspicious_validtime) {
     // 超过时间，移除
     m_attackers.erase(src2dst);
+    std::vector<std::pair<uint32_t, std::pair<Ipv4Address, Ipv4Address>>> V;
     for (auto item: m_received_defendinfos)
       if (item.second == src2dst)
-        m_received_defendinfos.erase(item);
+        V.push_back(item);
+    for (auto item:V) m_received_defendinfos.erase(item);
+    // 下面两种都会内存泄漏
+    // auto new_end = std::remove_if(m_received_defendinfos.begin (), m_received_defendinfos.end (),
+    //                           [&](const std::pair<uint32_t, std::pair<Ipv4Address, Ipv4Address>>& a) {
+    //                             return a.second == src2dst;
+    //                           });
+    // m_received_defendinfos.erase (new_end, m_received_defendinfos.end ());
+    // for (auto item: m_received_defendinfos)
+    //   if (item.second == src2dst)
+    //     m_received_defendinfos.erase(item);
     return false;
   }
   return true;

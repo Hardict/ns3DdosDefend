@@ -61,6 +61,21 @@
     "utility": "cpp",
     "typeindex": "cpp",
     "typeinfo": "cpp",
-    "valarray": "cpp"
+    "valarray": "cpp",
+    "any": "cpp",
+    "bit": "cpp",
+    "charconv": "cpp",
+    "codecvt": "cpp",
+    "cuchar": "cpp",
+    "map": "cpp",
+    "set": "cpp",
+    "iterator": "cpp",
+    "memory_resource": "cpp",
+    "optional": "cpp",
+    "random": "cpp",
+    "string": "cpp",
+    "string_view": "cpp",
+    "shared_mutex": "cpp",
+    "variant": "cpp"
   }
 }
