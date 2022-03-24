@@ -267,15 +267,15 @@ int main(int argc, char *argv[]) {
   internet.Install(adhoc_nodes);
 
   /** Energy Model **/
-  // BasicEnergySourceHelper basicSourceHelper;
-  // basicSourceHelper.Set("BasicEnergySourceInitialEnergyJ", DoubleValue(5000.0));// configure energy source for StaNodes
-  // // basicSourceHelper.Set("BasicEnergySupplyVoltageV", DoubleValue(3.0));
-  // EnergySourceContainer sources = basicSourceHelper.Install(adhoc_nodes);
-  // WifiRadioEnergyModelHelper radioEnergyHelper;
-  // radioEnergyHelper.Set ("IdleCurrentA", DoubleValue (0.1));
-  // radioEnergyHelper.Set ("TxCurrentA", DoubleValue (0.5));
-  // radioEnergyHelper.Set ("RxCurrentA", DoubleValue (0.5));
-  // DeviceEnergyModelContainer adhoc_device_energy_model = radioEnergyHelper.Install(adhoc_devices, sources); // install device model
+  BasicEnergySourceHelper basicSourceHelper;
+  basicSourceHelper.Set("BasicEnergySourceInitialEnergyJ", DoubleValue(5000.0));// configure energy source for StaNodes
+  // basicSourceHelper.Set("BasicEnergySupplyVoltageV", DoubleValue(3.0));
+  EnergySourceContainer sources = basicSourceHelper.Install(adhoc_nodes);
+  WifiRadioEnergyModelHelper radioEnergyHelper;
+  radioEnergyHelper.Set ("IdleCurrentA", DoubleValue (0.1));
+  radioEnergyHelper.Set ("TxCurrentA", DoubleValue (0.5));
+  radioEnergyHelper.Set ("RxCurrentA", DoubleValue (0.5));
+  DeviceEnergyModelContainer adhoc_device_energy_model = radioEnergyHelper.Install(adhoc_devices, sources); // install device model
 
   // 在aodv协议中绑定防御包发送
   for (uint32_t i = 0; i < nAdHocNum; i++) {
@@ -490,12 +490,12 @@ int main(int argc, char *argv[]) {
             << std::endl;
     outfile << "Socket total accept/send: " << 100. * cnt_recvnormalpacket / txcnt << "%" << std::endl;
     outfile << "App total accept/receive: " << 100. * cnt_recvnormalpacket / rxcnt << "%" << std::endl;
-    // double tot_energy = 0;
-    // for(auto iter = adhoc_device_energy_model.Begin(); iter != adhoc_device_energy_model.End(); iter++) {
-    //   double energyConsumed = (*iter)->GetTotalEnergyConsumption ();
-    //   tot_energy += energyConsumed;
-    // }
-    // outfile << "Total Energy Consumption: " << tot_energy << "J" << std::endl;
+    double tot_energy = 0;
+    for(auto iter = adhoc_device_energy_model.Begin(); iter != adhoc_device_energy_model.End(); iter++) {
+      double energyConsumed = (*iter)->GetTotalEnergyConsumption ();
+      tot_energy += energyConsumed;
+    }
+    outfile << "Total Energy Consumption: " << tot_energy << "J" << std::endl;
     outfile.close();
   }
 

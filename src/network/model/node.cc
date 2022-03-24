@@ -159,11 +159,14 @@ uint32_t Node::GetFlag(void){
       Now() - GetFlagSetTime() > GetFlagValidTime()) {
     NS_LOG_INFO("node become normal because of exceed valid time.");
     SetFlag(kNodeFlag::FLAG_NORMAL);
-    // std::map<uint32_t, Time>().swap(m_received_pids);
-    m_received_pids.clear();
-    m_received_defendinfos.clear();
-    m_suspects.clear();
-    m_attackers.clear();
+    std::map<uint32_t, Time>().swap(m_received_pids);
+    std::set<std::pair<uint32_t, std::pair<Ipv4Address, Ipv4Address>>>().swap(m_received_defendinfos);
+    std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>>().swap(m_suspects);
+    std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>>().swap(m_attackers);
+    // m_received_pids.clear();
+    // m_received_defendinfos.clear();
+    // m_suspects.clear();
+    // m_attackers.clear();
   }
   return m_flag;
 }
