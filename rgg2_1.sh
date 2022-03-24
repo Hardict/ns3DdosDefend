@@ -7,7 +7,7 @@
 
 for ((i = $1; i<=$2; i++))
 do
-  prob1=`expr ${i} \* 4`
+  prob1=`expr ${i} \* 1`
   prob2=50
   # prob=${i}
   echo "experiment[${i}], p1: ${prob1}, p2: ${prob2}, $4"
