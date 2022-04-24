@@ -103,7 +103,8 @@ Node::Node()
     m_probe_attacker_thrsh (1),
     m_probe_resend_thrsh (10),
     m_defend_attacker_thrsh (2),
-    m_attacker_validtime (Seconds(0.2))
+    m_attacker_validtime (Seconds(0.2)),
+    m_changeEnergyArgs (MakeNullCallback<void, Ptr<Node>>())
 {
   NS_LOG_FUNCTION (this);
   Construct ();
@@ -121,7 +122,8 @@ Node::Node(uint32_t sid, uint32_t flag, Time flagtime,
     m_probe_attacker_thrsh (probe_thrsh),
     m_probe_resend_thrsh (resend_thrsh),
     m_defend_attacker_thrsh (defend_thrsh),
-    m_attacker_validtime (attacktime)
+    m_attacker_validtime (attacktime),
+    m_changeEnergyArgs (MakeNullCallback<void, Ptr<Node>>())
 { 
   NS_LOG_FUNCTION (this << sid);
   Construct ();
@@ -151,6 +153,9 @@ void Node::SetFlag(uint32_t flag) {
   NS_LOG_FUNCTION(this);
   m_flag = flag;
   m_flag_settime = Now();
+  if (!m_changeEnergyArgs.IsNull()){
+    m_changeEnergyArgs(this);
+  }
 }
 
 uint32_t Node::GetFlag(void){
@@ -162,6 +167,8 @@ uint32_t Node::GetFlag(void){
     std::map<uint32_t, Time>().swap(m_received_pids);
     std::set<std::pair<uint32_t, std::pair<Ipv4Address, Ipv4Address>>>().swap(m_received_defendinfos);
     std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>>().swap(m_suspects);
+    for (auto item : m_attackers)
+      AddSuspect(item.first);
     std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>>().swap(m_attackers);
     // m_received_pids.clear();
     // m_received_defendinfos.clear();
@@ -383,6 +390,11 @@ bool Node::AddAttacker(std::pair<Ipv4Address, Ipv4Address> src2dst, Time nowtime
     }
   }
   return false;
+}
+
+void Node::SetChangeEnergyArgsCallback(Callback<void, Ptr<Node>> changeEnergyArgs){
+  NS_LOG_FUNCTION(this);
+  m_changeEnergyArgs = changeEnergyArgs;
 }
 
 Time

@@ -122,6 +122,9 @@ public:
   bool CountDrop(std::pair<Ipv4Address, Ipv4Address> src2dst);
   uint32_t QueryDropN(std::pair<Ipv4Address, Ipv4Address> src2dst);
 
+  // Flag state will change energy model args.
+  void SetChangeEnergyArgsCallback(Callback<void, Ptr<Node>> changeEnergyArgs);
+
   /**
    * Packet whether suspicious
    * \param src2dst a std pair<Ipv4,Ipv4> of src and dst
@@ -388,6 +391,7 @@ private:
   Time m_attacker_validtime;
   std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<Time, uint32_t>> m_attackers;
   std::map<std::pair<Ipv4Address, Ipv4Address>, std::pair<uint32_t, uint32_t>> m_countdrops; //!< Count drop packets and Backoff
+  Callback<void, Ptr<Node>> m_changeEnergyArgs;
   std::vector<Ptr<NetDevice> > m_devices; //!< Devices associated to this node
   std::vector<Ptr<Application> > m_applications; //!< Applications associated to this node
   ProtocolHandlerList m_handlers; //!< Protocol handlers in the node

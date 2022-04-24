@@ -594,7 +594,7 @@ RoutingProtocol::RouteInput (Ptr<const Packet> p, const Ipv4Header &header,
     auto src2dst = std::make_pair(header.GetSource(), header.GetDestination());
     if (node->GetFlag() == Node::kNodeFlag::FLAG_PROBE && !node->IsAttacker(src2dst)){
       node->AddAttacker(src2dst);
-      if (node->IsAttacker(src2dst))
+      if (node->IsAttacker(src2dst) && !m_sendDefendPacket.IsNull())
         m_sendDefendPacket(node, src2dst);
     }
     if (node->IsAttacker(src2dst)){
