@@ -80,6 +80,10 @@ V4TraceRoute::GetTypeId (void)
                    TimeValue (Seconds (5)),
                    MakeTimeAccessor (&V4TraceRoute::m_waitIcmpReplyTimeout),
                    MakeTimeChecker ())
+    .AddAttribute ("SocketCloseWaitTime", "The waiting time for closing socket.",
+                   TimeValue (Seconds (0.1)),
+                   MakeTimeAccessor (&V4TraceRoute::m_waitSocketCloseTime),
+                   MakeTimeChecker ())
   ;
   return tid;
 }
@@ -95,11 +99,13 @@ V4TraceRoute::V4TraceRoute ()
     m_maxProbes (3),
     m_ttl (1),
     m_maxTtl (30),
-    m_waitIcmpReplyTimeout (Seconds (5))
+    m_waitIcmpReplyTimeout (Seconds (5)),
+    m_waitSocketCloseTime (Seconds(0.1)),
+    m_findFlag(0)
 {
   osRoute.clear ();
   routeIpv4.clear ();
-
+  std::vector<InetSocketAddress>().swap(m_inetAddrVec);
 }
 
 V4TraceRoute::~V4TraceRoute ()
@@ -112,6 +118,18 @@ void
 V4TraceRoute::Print (Ptr<OutputStreamWrapper> stream)
 {
   printStream = stream;
+}
+
+void V4TraceRoute::ReStartApplication() {
+  NS_LOG_FUNCTION (this);
+  m_seq = 0;
+  m_probeCount = 0;
+  m_ttl = 1;
+  m_findFlag = 0;
+  osRoute.clear();
+  routeIpv4.clear();
+  std::vector<InetSocketAddress>().swap(m_inetAddrVec);
+  StartApplication();
 }
 
 void
@@ -151,8 +169,6 @@ V4TraceRoute::StartApplication (void)
   m_next = Simulator::ScheduleNow (&V4TraceRoute::StartWaitReplyTimer, this);
 }
 
-
-
 void
 V4TraceRoute::StopApplication (void)
 {
@@ -168,9 +184,13 @@ V4TraceRoute::StopApplication (void)
       m_waitIcmpReplyTimer.Cancel ();
     }
 
+  if (m_waitSocketCloseTimer.IsRunning())
+    return;
+
   if (m_socket)
     {
-      m_socket->Close ();
+      // m_socket->Close ();
+      m_waitSocketCloseTimer = Simulator::Schedule(m_waitSocketCloseTime, &V4TraceRoute::SocketCloseWaitShedule, this);
     }
 
   if (m_verbose)
@@ -267,6 +287,7 @@ V4TraceRoute::Receive (Ptr<Socket> socket)
               osRoute << delta.As (Time::MS);
               if (m_probeCount == m_maxProbes)
                 {
+                  m_inetAddrVec.push_back(realFrom);
                   if (m_verbose)
                     {
                 	  NS_LOG_UNCOND(m_ttl << " " << routeIpv4.str () << " " << osRoute.str ());
@@ -291,6 +312,8 @@ V4TraceRoute::Receive (Ptr<Socket> socket)
                 {
                   m_next = Simulator::Schedule (m_interval, &V4TraceRoute::StartWaitReplyTimer, this);
                 }
+              else 
+                m_findFlag = 2;
             }
 
         }
@@ -301,7 +324,6 @@ V4TraceRoute::Receive (Ptr<Socket> socket)
           // ns-3 implementation does not include the UDP version of traceroute.
           // The traceroute ICMP version (the current version) stops until max_ttl is reached
           // or until an ICMP ECHO REPLY is received m_maxProbes times.
-
           Icmpv4Echo echo;
           p->RemoveHeader (echo);
           std::map<uint16_t, Time>::iterator i = m_sent.find (echo.GetSequenceNumber ());
@@ -321,15 +343,18 @@ V4TraceRoute::Receive (Ptr<Socket> socket)
 
                   m_sent.erase (i);
 
-                  if (m_verbose)
+                  if (m_probeCount == m_maxProbes)
                     {
-                      routeIpv4.str ("");
-                      routeIpv4.clear ();
-                      routeIpv4 << realFrom.GetIpv4 ();
-                      osRoute << delta.As (Time::MS);
+                    m_inetAddrVec.push_back(realFrom);
+                    m_findFlag = 1;
 
-                      if (m_probeCount == m_maxProbes)
+                    if (m_verbose)
                         {
+                        routeIpv4.str ("");
+                        routeIpv4.clear ();
+                        routeIpv4 << realFrom.GetIpv4 ();
+                        osRoute << delta.As (Time::MS);
+
                     	  NS_LOG_UNCOND(m_ttl << " " << routeIpv4.str () << " " << osRoute.str ());
                           if (printStream != NULL)
                             {
@@ -464,6 +489,5 @@ V4TraceRoute::HandleWaitReplyTimeout (void)
       routeIpv4.clear ();
     }
 }
-
 
 } // ns3 namespace

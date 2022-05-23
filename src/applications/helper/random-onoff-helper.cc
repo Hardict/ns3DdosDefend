@@ -17,7 +17,7 @@
  *
  * Author: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
  */
-#include "ns3/random-onoff-helper.h"
+#include "random-onoff-helper.h"
 
 #include "ns3/data-rate.h"
 #include "ns3/inet-socket-address.h"
@@ -30,27 +30,27 @@
 
 namespace ns3 {
 
-PoissonHelper::PoissonHelper(std::string protocol, Address address) {
-  m_factory.SetTypeId("ns3::PoissonApplication");
+RandomOnOffHelper::RandomOnOffHelper(std::string protocol, Address address) {
+  m_factory.SetTypeId("ns3::RandomOnOffApplication");
   m_factory.Set("Protocol", StringValue(protocol));
   m_factory.Set("Remote", AddressValue(address));
 }
 
-void PoissonHelper::SetAttribute(std::string name,
+void RandomOnOffHelper::SetAttribute(std::string name,
                                  const AttributeValue &value) {
   m_factory.Set(name, value);
 }
 
-ApplicationContainer PoissonHelper::Install(Ptr<Node> node) const {
+ApplicationContainer RandomOnOffHelper::Install(Ptr<Node> node) const {
   return ApplicationContainer(InstallPriv(node));
 }
 
-ApplicationContainer PoissonHelper::Install(std::string nodeName) const {
+ApplicationContainer RandomOnOffHelper::Install(std::string nodeName) const {
   Ptr<Node> node = Names::Find<Node>(nodeName);
   return ApplicationContainer(InstallPriv(node));
 }
 
-ApplicationContainer PoissonHelper::Install(NodeContainer c) const {
+ApplicationContainer RandomOnOffHelper::Install(NodeContainer c) const {
   ApplicationContainer apps;
   for (NodeContainer::Iterator i = c.Begin(); i != c.End(); ++i) {
     apps.Add(InstallPriv(*i));
@@ -59,14 +59,14 @@ ApplicationContainer PoissonHelper::Install(NodeContainer c) const {
   return apps;
 }
 
-Ptr<Application> PoissonHelper::InstallPriv(Ptr<Node> node) const {
+Ptr<Application> RandomOnOffHelper::InstallPriv(Ptr<Node> node) const {
   Ptr<Application> app = m_factory.Create<Application>();
   node->AddApplication(app);
 
   return app;
 }
 
-int64_t PoissonHelper::AssignStreams(NodeContainer c, int64_t stream) {
+int64_t RandomOnOffHelper::AssignStreams(NodeContainer c, int64_t stream) {
   int64_t currentStream = stream;
   Ptr<Node> node;
   for (NodeContainer::Iterator i = c.Begin(); i != c.End(); ++i) {
@@ -82,7 +82,7 @@ int64_t PoissonHelper::AssignStreams(NodeContainer c, int64_t stream) {
   return (currentStream - stream);
 }
 
-void PoissonHelper::SetConstantRate(DataRate dataRate) {
+void RandomOnOffHelper::SetConstantRate(DataRate dataRate) {
   m_factory.Set("OnTime",
                 StringValue("ns3::ConstantRandomVariable[Constant=1000]"));
   m_factory.Set("OffTime",

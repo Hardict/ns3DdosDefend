@@ -133,10 +133,11 @@ int main(int argc, char *argv[]) {
   uint32_t nSrandSeed = (unsigned)time(nullptr);
   uint32_t nOutFileId = 0;
   double send_start_time = 30;
-  double send_end_time = 90;
+  double send_end_time = 150;
   double total_time = send_end_time + 5;
   double kFlagValidTime = 30, kSuspiciousValidTime = 29.5, kAttackerValidTime = 29;
   uint32_t kProbeAttackerThrsh = kFlagValidTime * kClientRate;
+  std::string kLogDir = "energy";
   std::string kLogPrefix = "log";
   // Config::SetDefault("ns3::WifiMacQueue::MaxSize",
   // QueueSizeValue(QueueSize(QueueSizeUnit::PACKETS,
@@ -164,8 +165,11 @@ int main(int argc, char *argv[]) {
   cmd.AddValue("kSuspiciousValidTime", "kSuspiciousValidTime", kSuspiciousValidTime);
   cmd.AddValue("kAttackerValidTime", "kAttackerValidTime", kAttackerValidTime);
   cmd.AddValue("kProbeAttackerThrsh", "kProbeAttackerThrsh", kProbeAttackerThrsh);
+  cmd.AddValue("kLogDir", "kLogDir", kLogDir);
   cmd.AddValue("kLogPrefix", "kLogPrefix", kLogPrefix);
   cmd.Parse(argc, argv);
+  if (kProbeAttackerThrsh == kFlagValidTime * kClientRate)
+    kProbeAttackerThrsh = (uint32_t)(kFlagValidTime * kClientRate * (kUpdateTime + 1) / 2); 
   kProbProbeContinue /= 1000.;
   kProbDefendContinue /= 100.;
   // srand((unsigned)time(nullptr));
@@ -317,7 +321,7 @@ int main(int argc, char *argv[]) {
   }
 
   Ipv4AddressHelper address;
-  address.SetBase("10.1.1.0", "255.255.255.0");
+  address.SetBase("10.1.1.0", "255.255.0.0");
 
   Ipv4InterfaceContainer adhoc_ipv4;
   adhoc_ipv4 = address.Assign(adhoc_devices);
@@ -349,7 +353,7 @@ int main(int argc, char *argv[]) {
   }
 
   // uint32_t serverid = 6;
-
+  
   NodeContainer attackers;
   {
     std::default_random_engine rng(nSrandSeed);
@@ -449,7 +453,8 @@ int main(int argc, char *argv[]) {
     flowmonfile_simple.precision(3);
     // flowMonitor->SerializeToXmlFile("./rgg2_test.flowmon",true,true);
 
-    flowmonfile_simple << "./rgg2data/energy/" << kLogPrefix << "_" << nOutFileId << "_p1_"
+    flowmonfile_simple << "./rgg2data/" << kLogDir << "/"
+                       << kLogPrefix << "_" << nOutFileId << "_p1_"
                        << std::setiosflags(ios::fixed) << kProbProbeContinue
                        << ".out";
     std::ofstream outfile(flowmonfile_simple.str());

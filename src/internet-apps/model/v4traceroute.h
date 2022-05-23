@@ -28,6 +28,8 @@
 #include "ns3/average.h"
 #include "ns3/simulator.h"
 #include "ns3/output-stream-wrapper.h"
+#include "ns3/socket.h"
+#include <vector>
 #include <map>
 
 namespace ns3 {
@@ -62,6 +64,9 @@ public:
    * \param stream the output stream
    */
   void Print (Ptr<OutputStreamWrapper> stream);
+  std::vector<InetSocketAddress> GetInetSocketAddressVec() { return m_inetAddrVec; }
+  void ReStartApplication(void);
+  uint32_t GetFindFlag() { return m_findFlag; }
 
 private:
   virtual void StartApplication (void);
@@ -90,6 +95,9 @@ private:
    *         in the time defined by StartWaitReplyTimer.
    */
   void HandleWaitReplyTimeout ();
+
+  // socket wait a moment to close
+  void SocketCloseWaitShedule() { m_socket->Close(); }
 
   /// Remote address
   Ipv4Address m_remote;
@@ -135,6 +143,15 @@ private:
   /// Stream of the traceroute used for the output file
   Ptr<OutputStreamWrapper> printStream;
 
+  // socket close wait time
+  Time m_waitSocketCloseTime;
+  EventId m_waitSocketCloseTimer;
+
+  //
+  std::vector<InetSocketAddress> m_inetAddrVec;
+  // check if find route
+  // 0 start, 1 find, 2 tle
+  uint32_t m_findFlag;
 
 };
 

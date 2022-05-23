@@ -17,8 +17,8 @@
  *
  * Author: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
  */
-#ifndef POISSON_HELPER_H
-#define POISSON_HELPER_H
+#ifndef RandomOnOff_HELPER_H
+#define RandomOnOff_HELPER_H
 
 #include <stdint.h>
 
@@ -37,14 +37,14 @@ namespace ns3 {
 class DataRate;
 
 /**
- * \ingroup poisson
- * \brief A helper to make it easier to instantiate an ns3::PoissonApplication
+ * \ingroup RandomOnOff
+ * \brief A helper to make it easier to instantiate an ns3::RandomOnOffApplication
  * on a set of nodes.
  */
-class PoissonHelper {
+class RandomOnOffHelper {
  public:
   /**
-   * Create an PoissonHelper to make it easier to work with PoissonApplication
+   * Create an RandomOnOffHelper to make it easier to work with RandomOnOffApplication
    *
    * \param protocol the name of the protocol to use to send traffic
    *        by the applications. This string identifies the socket
@@ -53,7 +53,7 @@ class PoissonHelper {
    * \param address the address of the remote node to send traffic
    *        to.
    */
-  PoissonHelper(std::string protocol, Address address);
+  RandomOnOffHelper(std::string protocol, Address address);
 
   /**
    * Helper function used to set the underlying application attributes.
@@ -129,4 +129,4 @@ class PoissonHelper {
 
 }  // namespace ns3
 
-#endif /* POISSON_HELPER_H */
+#endif /* RandomOnOff_HELPER_H */

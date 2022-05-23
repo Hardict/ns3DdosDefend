@@ -39,7 +39,7 @@ class Address;
 class RandomVariableStream;
 class Socket;
 
-class RandomOnOffApplication : public Application {
+class lowRateTcpDosApplication : public Application {
  public:
   /**
    * \brief Get the type ID.
@@ -47,9 +47,9 @@ class RandomOnOffApplication : public Application {
    */
   static TypeId GetTypeId(void);
 
-  RandomOnOffApplication();
+  lowRateTcpDosApplication();
 
-  virtual ~RandomOnOffApplication();
+  virtual ~lowRateTcpDosApplication();
 
   /**
    * \brief Set the total number of bytes to send.
@@ -75,6 +75,11 @@ class RandomOnOffApplication : public Application {
    * \return the number of stream indices assigned by this model
    */
   int64_t AssignStreams(int64_t stream);
+
+  /* 
+   * \brief Set the application type. type=1 while it is a attacker
+   */
+  void SetType(bool type);
 
  protected:
   virtual void DoDispose(void);
@@ -110,8 +115,6 @@ class RandomOnOffApplication : public Application {
   bool m_connected;                        //!< True if connected
   Ptr<RandomVariableStream> m_onTime;      //!< rng for On Time
   Ptr<RandomVariableStream> m_offTime;     //!< rng for Off Time
-  Ptr<RandomVariableStream> m_intervalRng;    //!< rng for send interval
-  Ptr<RandomVariableStream> m_pktSizeRng;  //!< rng for packet size
   DataRate m_cbrRate;                      //!< Rate that data is generated
   DataRate m_cbrRateFailSafe;  //!< Rate that data is generated (check copy)
   uint32_t m_pktSize;          //!< Size of packets

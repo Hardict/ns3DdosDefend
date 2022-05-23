@@ -79,12 +79,20 @@ public:
   virtual void SetIpv4 (Ptr<Ipv4> ipv4);
   virtual void PrintRoutingTable (Ptr<OutputStreamWrapper> stream, Time::Unit unit = Time::S) const;
 
-  void SetDefendCallback (Callback<void, Ptr<Node>, std::pair<Ipv4Address, Ipv4Address>> sendDefendPacket) {
+  void SetDefendCallback(Callback<void, Ptr<Node>, std::pair<Ipv4Address, Ipv4Address>> sendDefendPacket) {
     m_sendDefendPacket = sendDefendPacket;
   }
 
-  void TestDefendCallback (Ptr<Node> node, std::pair<Ipv4Address, Ipv4Address> pir){
+  void TestDefendCallback(Ptr<Node> node, std::pair<Ipv4Address, Ipv4Address> pir){
     m_sendDefendPacket(node, pir);
+  }
+
+  void SetMaliciousEnable(bool flag){
+    IsMalicious = flag;
+  }
+
+  bool GetMaliciousEnable() const{
+    return IsMalicious;
   }
 
   // Handle protocol parameters
@@ -475,6 +483,7 @@ private:
   Time m_lastBcastTime;
 
   Callback<void, Ptr<Node>, std::pair<Ipv4Address, Ipv4Address>> m_sendDefendPacket;
+  bool IsMalicious;
 };
 
 } //namespace aodv

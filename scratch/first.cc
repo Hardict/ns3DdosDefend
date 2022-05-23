@@ -14,13 +14,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "ns3/applications-module.h"
 #include "ns3/core-module.h"
-#include "ns3/internet-module.h"
 #include "ns3/network-module.h"
+#include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
-#include "ns3/flow-monitor-helper.h"
-#include "ns3/ipv4-flow-classifier.h"
+#include "ns3/applications-module.h"
+#include "ns3/olsr-helper.h"
+#include "ns3/nix-vector-helper.h"
 
 // Default Network Topology
 //
@@ -28,98 +28,73 @@
 // n0 -------------- n1
 //    point-to-point
 //
-
+ 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("FirstScriptExample");
+NS_LOG_COMPONENT_DEFINE ("FirstScriptExample");
 
-void recvNormal(Ptr<Socket> sock) {
-  NS_LOG_DEBUG(Now().GetSeconds() << "s, Normal");
-  Address org_src;
-  Ptr<Packet> packet;
-  while(packet = sock->RecvFrom(org_src)){
-    InetSocketAddress inet_src = InetSocketAddress::ConvertFrom(org_src);
-    NS_LOG_DEBUG("received a normal packet from " << inet_src.GetIpv4() << " "
-                                                  << inet_src.GetPort());
-    Ptr<Packet> pck = Create<Packet>();
-    sock->SendTo(pck,0,org_src);
-  }
-  Simulator::Schedule(Seconds(1.0), &recvNormal, sock);
-}
-
-void ThroughputMonitor (FlowMonitorHelper *flowMonitorHelper, Ptr<FlowMonitor> flowMonitor){
-  NS_LOG_INFO(Now());
-  flowMonitor->CheckForLostPackets();
-  std::map<FlowId, FlowMonitor::FlowStats> flowStats = flowMonitor->GetFlowStats();
-  Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowMonitorHelper->GetClassifier());
-  for (auto item:flowStats) {
-    // FiveTuple五元组是：(source-ip, destination-ip, protocol, source-port, destination-port)
-    auto tmp = classifier->FindFlow (item.first);
-    NS_LOG_INFO(tmp.sourceAddress << " " <<
-                tmp.sourcePort << " " <<
-                tmp.destinationAddress << " " <<
-                tmp.destinationPort);
-  }
-  Simulator::Schedule(Seconds(1.), &ThroughputMonitor, flowMonitorHelper, flowMonitor);
-}
-
-int main(int argc, char *argv[]) {
-  CommandLine cmd(__FILE__);
-  cmd.Parse(argc, argv);
-
-  Time::SetResolution(Time::NS);
-  LogComponentEnable("UdpEchoClientApplication", LOG_LEVEL_INFO);
-  LogComponentEnable("UdpEchoServerApplication", LOG_LEVEL_INFO);
-  // LogComponentEnable("UdpSocketImpl", LOG_LEVEL_ALL);
-  LogComponentEnable("FirstScriptExample", LOG_LEVEL_ALL);
+int
+main (int argc, char *argv[])
+{
+  CommandLine cmd (__FILE__);
+  cmd.Parse (argc, argv);
+  
+  Time::SetResolution (Time::NS);
+  LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
+  LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
 
   NodeContainer nodes;
-  nodes.Create(2);
+  nodes.Create (3);
 
-
-  PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
-  pointToPoint.SetChannelAttribute("Delay", StringValue("2ms"));
-
-  NetDeviceContainer devices;
-  devices = pointToPoint.Install(nodes);
 
   InternetStackHelper stack;
-  stack.Install(nodes);
+  Ipv4NixVectorHelper nixRouting;
+  stack.SetRoutingHelper (nixRouting);  // has effect on the next Install ()
+  stack.Install (nodes);
+
+  PointToPointHelper pointToPoint;
+  NetDeviceContainer devices;
+
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+  pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  auto d1 = pointToPoint.Install (nodes.Get(0), nodes.Get(1));
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+  pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  auto d2 = pointToPoint.Install (nodes.Get(1), nodes.Get(2));
 
   Ipv4AddressHelper address;
-  address.SetBase("10.1.1.0", "255.255.255.0");
+  address.SetBase ("10.0.0.0", "255.255.255.0");
 
-  Ipv4InterfaceContainer interfaces = address.Assign(devices);
+  // auto inter1 = address.Assign(d1);
+  // address.NewNetwork();
+  // auto inter2 = address.Assign(d2);
+  // address.NewNetwork();
+  devices.Add(d1);
+  devices.Add(d2);
+  Ipv4InterfaceContainer interfaces = address.Assign (devices);
 
-  Ptr<FlowMonitor> flowMonitor;
-  FlowMonitorHelper flowMonitorHelper;
-  flowMonitor = flowMonitorHelper.Install(nodes);
 
-  // Config::SetDefault("ns3::UdpSocket::RcvBufSize", UintegerValue(1<<10));
-  TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
-  Ptr<Socket> recv = Socket::CreateSocket(nodes.Get(1), tid);
-  recv->Bind(InetSocketAddress(Ipv4Address::GetAny(), 9));
-  // recv->SetRecvCallback(MakeCallback(&recvNormalCallback));
-  recv->SetAttribute("RcvBufSize", UintegerValue(1<<11));
-  Simulator::Schedule(Seconds(1e-9), &recvNormal, recv);
+  UdpEchoServerHelper echoServer (9);
 
-  UdpEchoClientHelper echoClient(interfaces.GetAddress(1), 9);
-  echoClient.SetAttribute("MaxPackets", UintegerValue(10));
-  echoClient.SetAttribute("Interval", TimeValue(Seconds(0.4)));
-  echoClient.SetAttribute("PacketSize", UintegerValue(1024));
+  ApplicationContainer serverApps = echoServer.Install (nodes);
+  serverApps.Start (Seconds (1.0));
+  serverApps.Stop (Seconds (10.0));
 
-  ApplicationContainer clientApps = echoClient.Install(nodes.Get(0));
-  clientApps.Start(Seconds(2.0));
-  clientApps.Stop(Seconds(10.0));
-  
+  UdpEchoClientHelper echoClient (interfaces.GetAddress (3,0), 9);
+  echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
+  echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
+  echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
 
-  // Simulator::Schedule(Seconds(1.0), ThroughputMonitor, &flowMonitorHelper, flowMonitor);
-  Simulator::Stop(Seconds(10.));
-  Simulator::Run();
-  std::stringstream stmp;
-  stmp << "./first.flowmon";
-  flowMonitor->SerializeToXmlFile (stmp.str ().c_str (), true, true);
-  Simulator::Destroy();
+  ApplicationContainer clientApps = echoClient.Install (nodes.Get (0));
+  clientApps.Start (Seconds (2.0));
+  clientApps.Stop (Seconds (10.0));
+
+  Ptr<Node> server = nodes.Get(2);
+  Ptr<Ipv4> ipv4 = server->GetObject<Ipv4>();
+  Ipv4Address serverIP = ipv4->GetAddress(1, 0).GetLocal();
+  NS_LOG_UNCOND(serverIP);
+
+  Simulator::Run ();
+  Simulator::Destroy ();
   return 0;
 }

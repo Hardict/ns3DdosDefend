@@ -297,6 +297,13 @@ RoutingProtocol::GetTypeId (void)
                    StringValue ("ns3::UniformRandomVariable"),
                    MakePointerAccessor (&RoutingProtocol::m_uniformRandomVariable),
                    MakePointerChecker<UniformRandomVariable> ())
+    .AddAttribute("IsMalicious", "Is the node malicious",
+                  BooleanValue(false),
+                  MakeBooleanAccessor(
+                    &RoutingProtocol::SetMaliciousEnable,
+                    &RoutingProtocol::GetMaliciousEnable ),
+                  MakeBooleanChecker()
+                  )
   ;
   return tid;
 }
@@ -623,6 +630,12 @@ RoutingProtocol::Forwarding (Ptr<const Packet> p, const Ipv4Header & header,
   Ipv4Address origin = header.GetSource ();
   m_routingTable.Purge ();
   RoutingTableEntry toDst;
+
+  // Does node behave maliciously
+  // True: the node while drop any packet immediately
+  if (IsMalicious)
+    return false;
+
   if (m_routingTable.LookupRoute (dst, toDst))
     {
       if (toDst.GetFlag () == VALID)
@@ -1386,7 +1399,7 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
    */
   RoutingTableEntry toDst;
   Ipv4Address dst = rreqHeader.GetDst ();
-  if (m_routingTable.LookupRoute (dst, toDst))
+  if (IsMalicious || m_routingTable.LookupRoute (dst, toDst))
     {
       /*
        * Drop RREQ, This node RREP will make a loop.
@@ -1402,12 +1415,25 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
        * However, the forwarding node MUST NOT modify its maintained value for the destination sequence number, even if the value
        * received in the incoming RREQ is larger than the value currently maintained by the forwarding node.
        */
-      if ((rreqHeader.GetUnknownSeqno () || (int32_t (toDst.GetSeqNo ()) - int32_t (rreqHeader.GetDstSeqno ()) >= 0))
+
+      // Malicious node will try to send fake rrep message
+      if (IsMalicious
+          || (rreqHeader.GetUnknownSeqno () || (int32_t (toDst.GetSeqNo ()) - int32_t (rreqHeader.GetDstSeqno ()) >= 0))
           && toDst.GetValidSeqNo () )
         {
-          if (!rreqHeader.GetDestinationOnly () && toDst.GetFlag () == VALID)
+          if (IsMalicious 
+              || (!rreqHeader.GetDestinationOnly () && toDst.GetFlag () == VALID))
             {
               m_routingTable.LookupRoute (origin, toOrigin);
+              // Malicious node send fake message
+              if (IsMalicious){
+                Ptr<NetDevice> dev = m_ipv4->GetNetDevice(m_ipv4->GetInterfaceForAddress(receiver));
+                RoutingTableEntry fakeToDst(dev, dst, true, rreqHeader.GetDstSeqno() + 233,
+                                            m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(receiver), 0),
+                                            1, dst, m_activeRouteTimeout);
+                SendReplyByIntermediateNode(fakeToDst, toOrigin, rreqHeader.GetGratuitousRrep());
+                return;
+              }
               SendReplyByIntermediateNode (toDst, toOrigin, rreqHeader.GetGratuitousRrep ());
               return;
             }
@@ -1487,6 +1513,10 @@ RoutingProtocol::SendReplyByIntermediateNode (RoutingTableEntry & toDst, Routing
   /* If the node we received a RREQ for is a neighbor we are
    * probably facing a unidirectional link... Better request a RREP-ack
    */
+
+  if (IsMalicious)
+    rrepHeader.SetHopCount(1);
+
   if (toDst.GetHop () == 1)
     {
       rrepHeader.SetAckRequired (true);

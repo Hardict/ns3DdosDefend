@@ -46,53 +46,53 @@
 
 namespace ns3 {
 
-NS_LOG_COMPONENT_DEFINE("PoissonApplication");
+NS_LOG_COMPONENT_DEFINE("RandomOnOffApplication");
 
-NS_OBJECT_ENSURE_REGISTERED(PoissonApplication);
+NS_OBJECT_ENSURE_REGISTERED(RandomOnOffApplication);
 
-TypeId PoissonApplication::GetTypeId(void) {
+TypeId RandomOnOffApplication::GetTypeId(void) {
   static TypeId tid =
-      TypeId("ns3::PoissonApplication")
+      TypeId("ns3::RandomOnOffApplication")
           .SetParent<Application>()
           .SetGroupName("Applications")
-          .AddConstructor<PoissonApplication>()
+          .AddConstructor<RandomOnOffApplication>()
           .AddAttribute("DataRate", "The data rate in on state.",
                         DataRateValue(DataRate("500kb/s")),
-                        MakeDataRateAccessor(&PoissonApplication::m_cbrRate),
+                        MakeDataRateAccessor(&RandomOnOffApplication::m_cbrRate),
                         MakeDataRateChecker())
           .AddAttribute(
               "PacketSize", "The size of packets sent in on state",
               StringValue("ns3::ConstantRandomVariable[Constant=512.0]"),
-              MakePointerAccessor(&PoissonApplication::m_pktSizeRng),
+              MakePointerAccessor(&RandomOnOffApplication::m_pktSizeRng),
               MakePointerChecker<RandomVariableStream>())
           .AddAttribute(
               "Interval", "The value of sending interval.",
               StringValue("ns3::ConstantRandomVariable[Constant=1.0]"),
-              MakePointerAccessor(&PoissonApplication::m_intervalRng),
+              MakePointerAccessor(&RandomOnOffApplication::m_intervalRng),
               MakePointerChecker<RandomVariableStream>())
           .AddAttribute("Remote", "The address of the destination",
                         AddressValue(),
-                        MakeAddressAccessor(&PoissonApplication::m_peer),
+                        MakeAddressAccessor(&RandomOnOffApplication::m_peer),
                         MakeAddressChecker())
           .AddAttribute("Local",
                         "The Address on which to bind the socket. If not set, "
                         "it is generated automatically.",
                         AddressValue(),
-                        MakeAddressAccessor(&PoissonApplication::m_local),
+                        MakeAddressAccessor(&RandomOnOffApplication::m_local),
                         MakeAddressChecker())
           .AddAttribute(
               "OnTime",
               "A RandomVariableStream used to pick the duration of the 'On' "
               "state.",
               StringValue("ns3::ConstantRandomVariable[Constant=1.0]"),
-              MakePointerAccessor(&PoissonApplication::m_onTime),
+              MakePointerAccessor(&RandomOnOffApplication::m_onTime),
               MakePointerChecker<RandomVariableStream>())
           .AddAttribute(
               "OffTime",
               "A RandomVariableStream used to pick the duration of the 'Off' "
               "state.",
               StringValue("ns3::ConstantRandomVariable[Constant=1.0]"),
-              MakePointerAccessor(&PoissonApplication::m_offTime),
+              MakePointerAccessor(&RandomOnOffApplication::m_offTime),
               MakePointerChecker<RandomVariableStream>())
           .AddAttribute(
               "MaxBytes",
@@ -100,39 +100,39 @@ TypeId PoissonApplication::GetTypeId(void) {
               "no packet is sent again, even in on state. The value zero means "
               "that there is no limit.",
               UintegerValue(0),
-              MakeUintegerAccessor(&PoissonApplication::m_maxBytes),
+              MakeUintegerAccessor(&RandomOnOffApplication::m_maxBytes),
               MakeUintegerChecker<uint64_t>())
           .AddAttribute("Protocol",
                         "The type of protocol to use. This should be "
                         "a subclass of ns3::SocketFactory",
                         TypeIdValue(UdpSocketFactory::GetTypeId()),
-                        MakeTypeIdAccessor(&PoissonApplication::m_tid),
+                        MakeTypeIdAccessor(&RandomOnOffApplication::m_tid),
                         // This should check for SocketFactory as a parent
                         MakeTypeIdChecker())
           .AddAttribute(
               "EnableSeqTsSizeHeader",
               "Enable use of SeqTsSizeHeader for sequence number and timestamp",
               BooleanValue(false),
-              MakeBooleanAccessor(&PoissonApplication::m_enableSeqTsSizeHeader),
+              MakeBooleanAccessor(&RandomOnOffApplication::m_enableSeqTsSizeHeader),
               MakeBooleanChecker())
           .AddTraceSource(
               "Tx", "A new packet is created and is sent",
-              MakeTraceSourceAccessor(&PoissonApplication::m_txTrace),
+              MakeTraceSourceAccessor(&RandomOnOffApplication::m_txTrace),
               "ns3::Packet::TracedCallback")
           .AddTraceSource("TxWithAddresses",
                           "A new packet is created and is sent",
                           MakeTraceSourceAccessor(
-                              &PoissonApplication::m_txTraceWithAddresses),
+                              &RandomOnOffApplication::m_txTraceWithAddresses),
                           "ns3::Packet::TwoAddressTracedCallback")
           .AddTraceSource("TxWithSeqTsSize",
                           "A new packet is created with SeqTsSizeHeader",
                           MakeTraceSourceAccessor(
-                              &PoissonApplication::m_txTraceWithSeqTsSize),
+                              &RandomOnOffApplication::m_txTraceWithSeqTsSize),
                           "ns3::PacketSink::SeqTsSizeCallback");
   return tid;
 }
 
-PoissonApplication::PoissonApplication()
+RandomOnOffApplication::RandomOnOffApplication()
     : m_socket(0),
       m_connected(false),
       m_residualBits(0),
@@ -142,19 +142,19 @@ PoissonApplication::PoissonApplication()
   NS_LOG_FUNCTION(this);
 }
 
-PoissonApplication::~PoissonApplication() { NS_LOG_FUNCTION(this); }
+RandomOnOffApplication::~RandomOnOffApplication() { NS_LOG_FUNCTION(this); }
 
-void PoissonApplication::SetMaxBytes(uint64_t maxBytes) {
+void RandomOnOffApplication::SetMaxBytes(uint64_t maxBytes) {
   NS_LOG_FUNCTION(this << maxBytes);
   m_maxBytes = maxBytes;
 }
 
-Ptr<Socket> PoissonApplication::GetSocket(void) const {
+Ptr<Socket> RandomOnOffApplication::GetSocket(void) const {
   NS_LOG_FUNCTION(this);
   return m_socket;
 }
 
-int64_t PoissonApplication::AssignStreams(int64_t stream) {
+int64_t RandomOnOffApplication::AssignStreams(int64_t stream) {
   NS_LOG_FUNCTION(this << stream);
   m_onTime->SetStream(stream);
   m_offTime->SetStream(stream + 1);
@@ -163,7 +163,7 @@ int64_t PoissonApplication::AssignStreams(int64_t stream) {
   return 4;
 }
 
-void PoissonApplication::DoDispose(void) {
+void RandomOnOffApplication::DoDispose(void) {
   NS_LOG_FUNCTION(this);
 
   CancelEvents();
@@ -175,7 +175,7 @@ void PoissonApplication::DoDispose(void) {
 
 // Application Methods
 // Called at time specified by Start
-void PoissonApplication::StartApplication() {
+void RandomOnOffApplication::StartApplication() {
   NS_LOG_FUNCTION(this);
 
   // Create the socket if not already
@@ -208,8 +208,8 @@ void PoissonApplication::StartApplication() {
     m_socket->ShutdownRecv();
 
     m_socket->SetConnectCallback(
-        MakeCallback(&PoissonApplication::ConnectionSucceeded, this),
-        MakeCallback(&PoissonApplication::ConnectionFailed, this));
+        MakeCallback(&RandomOnOffApplication::ConnectionSucceeded, this),
+        MakeCallback(&RandomOnOffApplication::ConnectionFailed, this));
   }
   m_cbrRateFailSafe = m_cbrRate;
 
@@ -222,7 +222,7 @@ void PoissonApplication::StartApplication() {
 }
 
 // Called at time specified by Stop
-void PoissonApplication::StopApplication() {
+void RandomOnOffApplication::StopApplication() {
   NS_LOG_FUNCTION(this);
 
   CancelEvents();
@@ -230,11 +230,11 @@ void PoissonApplication::StopApplication() {
     m_socket->Close();
   } else {
     NS_LOG_WARN(
-        "PoissonApplication found null socket to close in StopApplication");
+        "RandomOnOffApplication found null socket to close in StopApplication");
   }
 }
 
-void PoissonApplication::CancelEvents() {
+void RandomOnOffApplication::CancelEvents() {
   NS_LOG_FUNCTION(this);
 
   if (m_sendEvent.IsRunning() &&
@@ -256,14 +256,14 @@ void PoissonApplication::CancelEvents() {
 }
 
 // Event handlers
-void PoissonApplication::StartSending() {
+void RandomOnOffApplication::StartSending() {
   NS_LOG_FUNCTION(this);
   m_lastStartTime = Simulator::Now();
   ScheduleNextTx();  // Schedule the send packet event
   ScheduleStopEvent();
 }
 
-void PoissonApplication::StopSending() {
+void RandomOnOffApplication::StopSending() {
   NS_LOG_FUNCTION(this);
   CancelEvents();
 
@@ -271,7 +271,7 @@ void PoissonApplication::StopSending() {
 }
 
 // Private helpers
-void PoissonApplication::ScheduleNextTx() {
+void RandomOnOffApplication::ScheduleNextTx() {
   NS_LOG_FUNCTION(this);
 
   m_pktSize = m_pktSizeRng->GetValue();
@@ -288,7 +288,7 @@ void PoissonApplication::ScheduleNextTx() {
         Seconds(bits / static_cast<double>(m_cbrRate.GetBitRate()) + interval));
     NS_LOG_LOGIC("nextTime = " << nextTime.As(Time::S));
     m_sendEvent =
-        Simulator::Schedule(nextTime, &PoissonApplication::SendPacket, this);
+        Simulator::Schedule(nextTime, &RandomOnOffApplication::SendPacket, this);
   } else {  // All done, cancel any pending events
     StopApplication();
   }
@@ -297,28 +297,28 @@ void PoissonApplication::ScheduleNextTx() {
 // Schedules the event to start
 // sending data (switch to the
 // "On" state)
-void PoissonApplication::ScheduleStartEvent() {
+void RandomOnOffApplication::ScheduleStartEvent() {
   NS_LOG_FUNCTION(this);
 
   Time offInterval = Seconds(m_offTime->GetValue());
   NS_LOG_LOGIC("start at " << offInterval.As(Time::S));
   m_startStopEvent =
-      Simulator::Schedule(offInterval, &PoissonApplication::StartSending, this);
+      Simulator::Schedule(offInterval, &RandomOnOffApplication::StartSending, this);
 }
 
 // Schedules the event to stop
 // sending data (switch to "Off"
 // state)
-void PoissonApplication::ScheduleStopEvent() {
+void RandomOnOffApplication::ScheduleStopEvent() {
   NS_LOG_FUNCTION(this);
 
   Time onInterval = Seconds(m_onTime->GetValue());
   NS_LOG_LOGIC("stop at " << onInterval.As(Time::S));
   m_startStopEvent =
-      Simulator::Schedule(onInterval, &PoissonApplication::StopSending, this);
+      Simulator::Schedule(onInterval, &RandomOnOffApplication::StopSending, this);
 }
 
-void PoissonApplication::SendPacket() {
+void RandomOnOffApplication::SendPacket() {
   NS_LOG_FUNCTION(this);
 
   NS_ASSERT(m_sendEvent.IsExpired());
@@ -382,12 +382,12 @@ void PoissonApplication::SendPacket() {
   ScheduleNextTx();
 }
 
-void PoissonApplication::ConnectionSucceeded(Ptr<Socket> socket) {
+void RandomOnOffApplication::ConnectionSucceeded(Ptr<Socket> socket) {
   NS_LOG_FUNCTION(this << socket);
   m_connected = true;
 }
 
-void PoissonApplication::ConnectionFailed(Ptr<Socket> socket) {
+void RandomOnOffApplication::ConnectionFailed(Ptr<Socket> socket) {
   NS_LOG_FUNCTION(this << socket);
   NS_FATAL_ERROR("Can't connect");
 }
